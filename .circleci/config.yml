@@ -21,11 +21,11 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            ssh -o StrictHostKeyChecking=no circleci@192.34.56.220
-            docker stop $(docker ps -a -q)
-            docker rm $(docker ps -a -q)
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker pull $IMAGE_NAME:latest
+            ssh -o StrictHostKeyChecking=no circleci@192.34.56.220;
+            docker stop $(docker ps -a -q);
+            docker rm $(docker ps -a -q);
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin;
+            docker pull $IMAGE_NAME:latest;
   deploy:
     docker:
       - image: circleci/buildpack-deps:stretch
