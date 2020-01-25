@@ -22,8 +22,8 @@ jobs:
           name: Deploy Container
           command: |
             ssh -o StrictHostKeyChecking=no circleci@192.34.56.220 bash -c '
-            cd /home/circleci/deploy;
-            ./deploy.sh'
+            cat ~/password.txt | docker login --username relovely --password-stdin;
+            docker pull relovely/relovely-api:latest;'
 workflows:
   version: 2
   build-master:
