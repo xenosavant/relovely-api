@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: circleci/node:12.14.1
     environment:
       IMAGE_NAME: relovely/relovely-api
     working_directory: ~/app
@@ -26,7 +26,7 @@ jobs:
             docker stop $(docker ps -a -q);
             docker system prune -f;
             docker pull relovely/relovely-api:latest;
-            docker run -p -d --rm 80:3000 relovely/relovely-api'
+            docker run -d -p 80:3000 relovely/relovely-api'
 workflows:
   version: 2
   build-master:
