@@ -26,7 +26,7 @@ jobs:
             docker stop $(docker ps -a -q);
             docker system prune -f;
             docker pull relovely/relovely-api:latest;
-            docker run --rm -p -d 80:3000 relovely/relovely-api'
+            docker run -p -d --rm 80:3000 relovely/relovely-api'
 workflows:
   version: 2
   build-master:
