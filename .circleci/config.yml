@@ -23,6 +23,7 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no circleci@$DROPLET_IP bash -c '
             cat ~/password.txt | docker login --username relovely --password-stdin;
+            docker stop $(docker ps -a -q)
             docker rmi relovely/relovely-api;
             docker pull relovely/relovely-api:latest;
             docker run --rm -p 80:3000 relovely/relovely-api'
