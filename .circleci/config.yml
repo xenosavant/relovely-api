@@ -21,7 +21,7 @@ jobs:
   deploy:
     docker:
       - image: circleci/buildpack-deps:stretch
-    working-directory: ~/deploy
+    working_directory: ~/deploy
     steps:
       - add_ssh_keys:
           fingerprints:
