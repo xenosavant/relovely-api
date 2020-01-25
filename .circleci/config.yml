@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            ssh StrictHostKeyChecking=no circleci@$DROPLET_IP
+            ssh circleci@$DROPLET_IP
             # echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             # docker pull relovely/relovely-api:latest
 workflows:
