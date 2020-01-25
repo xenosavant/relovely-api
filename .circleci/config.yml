@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            ssh circleci@$DROPLET_IP
+            ssh circleci@192.34.56.220
             # echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             # docker pull relovely/relovely-api:latest
 workflows:
