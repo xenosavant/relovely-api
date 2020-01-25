@@ -21,19 +21,9 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            ssh -o StrictHostKeyChecking=no circleci@192.34.56.220;
-            docker stop $(docker ps -a -q);
-            docker rm $(docker ps -a -q);
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin;
-            docker pull $IMAGE_NAME:latest;
-  deploy:
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    working_directory: ~/deploy
-    steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "d8:4a:40:15:98:bd:8d:5d:9a:6a:80:aa:cd:e0:55:c9"
+            ssh -o StrictHostKeyChecking=no circleci@192.34.56.220 bash -c '
+            cd /home/circleci/deploy;
+            ./deploy.sh'
 workflows:
   version: 2
   build-master:
