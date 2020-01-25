@@ -24,7 +24,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no circleci@$DROPLET_IP bash -c '
             cat ~/password.txt | docker login --username relovely --password-stdin;
             docker stop $(docker ps -a -q);
-            docker system prune;
+            docker system prune -f;
             docker pull relovely/relovely-api:latest;
             docker run --rm -p 80:3000 relovely/relovely-api'
 workflows:
