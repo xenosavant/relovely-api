@@ -20,18 +20,18 @@ jobs:
             docker push $IMAGE_NAME:latest
   deploy:
     docker:
-      -image: circleci/buildpack-deps:stretch
-      -working-directory: ~/deploy
-      steps:
-        - add_ssh_keys:
-          fingerprints:
-            - "d8:4a:40:15:98:bd:8d:5d:9a:6a:80:aa:cd:e0:55:c9"
-        - run:
-          name: Deploy Container
-            command: |
-              ssh circleci@192.34.56.220
-              # echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-              # docker pull relovely/relovely-api:latest
+      - image: circleci/buildpack-deps:stretch
+    working-directory: ~/deploy
+   steps:
+     - add_ssh_keys:
+        fingerprints:
+          - "d8:4a:40:15:98:bd:8d:5d:9a:6a:80:aa:cd:e0:55:c9"
+     - run:
+        name: Deploy Container
+        command: |
+          ssh circleci@192.34.56.220
+          # echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          # docker pull relovely/relovely-api:latest
 workflows:
   version: 2
   build-master:
