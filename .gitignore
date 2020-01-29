@@ -64,3 +64,5 @@ typings/
 *.tsbuildinfo
 
 .DS_Store
+
+src/datasources/mongo.datasource.config.json
