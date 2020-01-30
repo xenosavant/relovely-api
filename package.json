@@ -26,7 +26,7 @@
     "posttest": "npm run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
     "docker:build": "docker build -t relovely .",
-    "docker:run": "docker run --env-file ./env.config -p 3000:3000 -d relovely",
+    "docker:run": "docker run --env-file ./env.config -p 3000:3001 -d relovely",
     "docker:stop": "docker rm -f $(docker ps -a -q)",
     "docker:clean": "docker rmi -f $(docker images -q)",
     "migrate": "node ./dist/migrate",

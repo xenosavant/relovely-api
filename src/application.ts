@@ -32,7 +32,9 @@ export class RelovelyApplication extends BootMixin(
 
     this.dataSource(new DbDataSource());
 
-    this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({ debug: true });
+    if (process.env.NODE_ENV === 'develop') {
+      this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({ debug: true });
+    }
 
     this.repository(UserRepository);
 
