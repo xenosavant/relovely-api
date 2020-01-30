@@ -1,0 +1,11 @@
+{
+  "name": "db",
+  "connector": "mongodb",
+  "url": "mongodb://root:Hy67s%268f-d@64.227.18.51:27017/?authSource=admin&readPreference=primary&appname=relovely-api&ssl=false",
+  "host": "64.227.18.51",
+  "port": 27017,
+  "user": "root",
+  "password": "Hy67s&8f-d",
+  "database": "relovely",
+  "useNewUrlParser": true
+}

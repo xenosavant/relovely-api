@@ -10,6 +10,7 @@ import { ServiceMixin } from '@loopback/service-proxy';
 import path from 'path';
 import { MySequence } from './sequence';
 import { DbDataSource } from './datasources/db.datasource';
+import { runInThisContext } from 'vm';
 
 export class RelovelyApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -27,7 +28,23 @@ export class RelovelyApplication extends BootMixin(
     this.bind(RestExplorerBindings.CONFIG).to({
       path: '/explorer',
     });
-    this.dataSource(new DbDataSource());
+    if (process.env.NODE_ENV === 'production') {
+      this.dataSource(new DbDataSource({
+        name: 'db',
+        connector: 'mongodb',
+        url: process.env.CONNECTION_STRING,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        useNewUrlParser: true
+      }));
+    } else {
+      const config = require('./db.datasource.config.json');
+      this.dataSource(new DbDataSource(config));
+    }
+
     this.component(RestExplorerComponent);
 
     this.projectRoot = __dirname;
