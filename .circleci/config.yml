@@ -27,7 +27,7 @@ jobs:
             docker rm -f $(docker ps -a -q)
             docker rmi -f $(docker images -q);
             docker pull relovely/relovely-api:latest;
-            docker run -d -p --env-file ~/env.config 80:3000 relovely/relovely-api'
+            docker run --env-file ~/env.config -d -p 80:3000 relovely/relovely-api'
 workflows:
   version: 2
   build-master:
