@@ -11,6 +11,7 @@ import path from 'path';
 import { MySequence } from './sequence';
 import { DbDataSource } from './datasources/db.datasource';
 import { runInThisContext } from 'vm';
+import { UserRepository } from './repositories';
 
 export class RelovelyApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -41,9 +42,11 @@ export class RelovelyApplication extends BootMixin(
         useNewUrlParser: true
       }));
     } else {
-      const config = require('./datasources/db.datasource.config.json');
-      this.dataSource(new DbDataSource(config));
+      // const config = require('./datasources/db.datasource.config.json');
+      // this.dataSource(new DbDataSource(config));
     }
+
+    this.repository(UserRepository);
 
     this.component(RestExplorerComponent);
 

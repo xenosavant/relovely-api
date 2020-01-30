@@ -13,6 +13,12 @@ const PING_RESPONSE: ResponseObject = {
         title: 'PingResponse',
         properties: {
           dbname: { type: 'string' },
+          url: { type: 'string' },
+          host: { type: 'string' },
+          port: { type: 'string' },
+          password: { type: 'string' },
+          database: { type: 'string' },
+          env: { type: 'string' },
         },
       },
     },
@@ -35,6 +41,13 @@ export class PingController {
     // Reply with a greeting, the current time, the url, and request headers
     return {
       dbname: process.env.DB_NAME,
+      url: process.env.CONNECTION_STRING,
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      env: process.env.NODE_ENV
     };
   }
 }
