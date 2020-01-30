@@ -41,8 +41,8 @@ export class RelovelyApplication extends BootMixin(
       //   useNewUrlParser: true
       // }));
     } else {
-      const config = require('./datasources/db.datasource.config.json');
-      this.dataSource(new DbDataSource(config));
+      // const config = require('./datasources/db.datasource.config.json');
+      // this.dataSource(new DbDataSource(config));
     }
 
     this.component(RestExplorerComponent);
