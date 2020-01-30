@@ -11,6 +11,7 @@ const PING_RESPONSE: ResponseObject = {
       schema: {
         type: 'object',
         title: 'PingResponse',
+        database_name: process.env.DB_NAME,
         properties: {
           greeting: { type: 'string' },
           date: { type: 'string' },
@@ -47,7 +48,7 @@ export class PingController {
       date: new Date(),
       url: this.req.url,
       headers: Object.assign({}, this.req.headers),
-      database_name: process.env.DB_NAME
+
     };
   }
 }

@@ -5,6 +5,7 @@ jobs:
       - image: circleci/node:12.14.1
     environment:
       IMAGE_NAME: relovely/relovely-api
+      DB_NAME: $DB_NAME
     working_directory: ~/app
     steps:
       - checkout
