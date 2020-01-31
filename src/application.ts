@@ -30,11 +30,12 @@ export class RelovelyApplication extends BootMixin(
       path: '/explorer',
     });
 
-    this.dataSource(new DbDataSource());
-
-    if (process.env.NODE_ENV === 'develop') {
+    if (process.env.NODE_ENV !== 'production') {
       this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({ debug: true });
+      require('dotenv').config();
     }
+
+    this.dataSource(new DbDataSource());
 
     this.repository(UserRepository);
 
