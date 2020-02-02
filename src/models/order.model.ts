@@ -1,7 +1,8 @@
 import { Entity, model, property } from '@loopback/repository';
 
 @model({ settings: { strict: true } })
-export class User extends Entity {
+export class Order extends Entity {
+
   @property({
     type: 'string',
     id: true,
@@ -13,70 +14,70 @@ export class User extends Entity {
     type: 'string',
     required: true,
   })
-  username: string;
+  productId: string;
+
+
+  @property({
+    type: 'date',
+    required: true,
+  })
+  purchaseDate: Date;
+
 
   @property({
     type: 'string',
     required: true,
   })
-  firstName: string;
+  public shipDate?: Date;
+
 
   @property({
     type: 'string',
     required: true,
   })
-  lastName: string;
+  public deliveryDate?: Date;
+
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  public status: 'shipped' | 'unshipped' | 'cancelled' | 'delivered';
 
   @property({
     type: 'string',
     required: false,
   })
-  profileImageUrl: string;
-
-  @property({
-    type: 'boolean',
-    required: true,
-  })
-  isSeller: boolean;
+  public trackingNumber?: string;
 
   @property({
     type: 'string',
+    required: false,
   })
-  instagramAccessToken?: string;
+  public shippingCarrerName?: string;
 
-  @property.array(String, {
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public shippingCarrierId?: string;
+
+  @property({
     type: 'string',
     required: true,
   })
-  followers: string[];
+  public total: number;
 
-  @property.array(String, {
+  @property({
     type: 'string',
     required: true,
   })
-  following: string[];
+  public shippingCost: number;
 
-  @property.array(String, {
+  @property({
     type: 'string',
     required: true,
   })
-  sales: string[];
+  public tax: number;
 
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  listings: string[];
-
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  favorites: string[];
 }
-
-export interface UserRelations {
-  // describe navigational properties here
-}
-
-export type UserWithRelations = User & UserRelations;

@@ -17,14 +17,25 @@ import {
   del,
   requestBody
 } from '@loopback/rest';
-import { User } from '../models';
-import { UserRepository } from '../repositories';
+import { User } from '../../models';
+import { UserRepository, ProductRepository } from '../../repositories';
+import { UserList, userListFields } from './response/user-list.interface';
+import { UserDetail } from './response/user-detail.interface';
+import { Dictionary } from 'express-serve-static-core';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
+    public productsRepository: ProductRepository,
   ) { }
+
+
+  productListFields = {
+    id: true, title: true, seller: true, imageUrls: true, videoUrls: true, auction: true,
+    auctionStart: true, auctionEnd: true, currentBid: true, sizeId: true, size: true, price: true, sold: true
+  }
+
 
   @post('/users', {
     responses: {
@@ -85,27 +96,6 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
-  @patch('/users', {
-    responses: {
-      '200': {
-        description: 'User PATCH success count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, { partial: true }),
-        },
-      },
-    })
-    user: User,
-    @param.query.object('where', getWhereSchemaFor(User)) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.updateAll(user, where);
-  }
 
   @get('/users/{id}', {
     responses: {
@@ -120,10 +110,53 @@ export class UserController {
     },
   })
   async findById(
-    @param.path.string('id') id: string,
-    @param.query.object('filter', getFilterSchemaFor(User)) filter?: Filter<User>
-  ): Promise<User> {
-    return this.userRepository.findById(id, filter);
+    @param.path.string('id') id: string
+  ): Promise<UserDetail> {
+    const user = await this.userRepository.findById(id);
+    const promiseDictionary: Record<string, any> = {};
+    const response = user as any;
+    const promises: Promise<any>[] = []
+    if (user.isSeller) {
+      promises.push(
+        this.productsRepository.find({
+          where: { id: { inq: user.sales } },
+          fields: userListFields
+        }).then(result => {
+          promiseDictionary['sales'] = result;
+        }),
+        this.productsRepository.find({
+          where: { and: [{ sellerId: user.id }, { sold: true }] },
+          fields: userListFields
+        }).then(result => {
+          promiseDictionary['listings'] = result;
+        }),
+        this.userRepository.find({
+          where: { id: { inq: user.followers } },
+          fields: userListFields
+        }).then(result => {
+          promiseDictionary['followers'] = result;
+        }));
+    }
+    promises.push(
+      this.userRepository.find({
+        where: { id: { inq: user.favorites } },
+        fields: userListFields
+      }).then(result => {
+        promiseDictionary['favorites'] = result;
+      }),
+      this.userRepository.find({
+        where: { id: { inq: user.following } },
+        fields: userListFields
+      }).then(result => {
+        promiseDictionary['following'] = result;
+      }));
+
+    await Promise.all(promises);
+
+    for (const key in promiseDictionary) {
+      response[key] = promiseDictionary[key];
+    }
+    return response as UserDetail;
   }
 
   @patch('/users/{id}', {
