@@ -16,22 +16,46 @@ export class User extends Entity {
   username: string;
 
   @property({
-    type: 'string',
-    required: true,
+    type: 'string'
   })
-  firstName: string;
+  firstName?: string;
+
+  @property({
+    type: 'string'
+  })
+  lastName?: string;
+
+  @property({
+    type: 'string'
+  })
+  passwordHash?: string;
+
+  @property({
+    type: 'string'
+  })
+  instagramAuthToken?: string;
 
   @property({
     type: 'string',
-    required: true,
+    required: true
   })
-  lastName: string;
+  signedInWithInstagram: string;
+
+  @property({
+    type: 'string'
+  })
+  facebookAuthToken?: string;
 
   @property({
     type: 'string',
-    required: false,
+    required: true
   })
-  profileImageUrl: string;
+  signedInWithFacebook: boolean;
+
+  @property({
+    type: 'string'
+  })
+  profileImageUrl?: string;
 
   @property({
     type: 'boolean',
@@ -39,40 +63,35 @@ export class User extends Entity {
   })
   isSeller: boolean;
 
-  @property({
+  @property.array(String, {
     type: 'string',
+    required: false,
   })
-  instagramAccessToken?: string;
+  followers?: string[];
 
   @property.array(String, {
     type: 'string',
-    required: true,
+    required: false,
   })
-  followers: string[];
+  following?: string[];
 
   @property.array(String, {
     type: 'string',
-    required: true,
+    required: false,
   })
-  following: string[];
+  sales?: string[];
 
   @property.array(String, {
     type: 'string',
-    required: true,
+    required: false,
   })
-  sales: string[];
+  listings?: string[];
 
   @property.array(String, {
     type: 'string',
-    required: true,
+    required: false,
   })
-  listings: string[];
-
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  favorites: string[];
+  favorites?: string[];
 }
 
 export interface UserRelations {

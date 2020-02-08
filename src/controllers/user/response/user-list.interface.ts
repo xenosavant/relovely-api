@@ -6,4 +6,7 @@ export interface UserList {
   lastName: string;
 }
 
-export const userListFields = { id: true, username: true, firstName: true, lastName: true, profileImageUrl: true };
+export const userListFields = {
+  id: true, username: true, firstName: true, lastName:
+    true, profileImageUrl: true
+};
