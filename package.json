@@ -49,6 +49,7 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "@loopback/authentication": "^3.3.3",
     "@loopback/boot": "^1.7.1",
     "@loopback/context": "^1.25.1",
     "@loopback/core": "^1.12.1",
@@ -57,9 +58,14 @@
     "@loopback/rest": "^1.25.1",
     "@loopback/rest-explorer": "^1.4.7",
     "@loopback/service-proxy": "^1.3.14",
+    "@types/bcrypt": "^3.0.0",
+    "@types/request-promise": "^4.1.45",
+    "bcrypt": "^3.0.8",
     "dotenv": "^8.2.0",
+    "jsonwebtoken": "^8.5.1",
     "loopback-connector-mongodb": "^4.2.0",
     "loopback-connector-rest": "^3.6.0",
+    "request-promise": "^4.2.5",
     "strong-error-handler": "^3.4.0",
     "tsc-watch": "^4.1.0"
   },

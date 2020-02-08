@@ -1,15 +1,11 @@
-import { bind, /* inject, */ BindingScope, inject } from '@loopback/core';
+import { bind, /* inject, */ BindingScope } from '@loopback/core';
 import { AuthData } from '../response/auth-data';
 import { BasicData } from '../response/basic-data';
 import { ProfileData } from '../response/profile-data';
-import { LongLivedTokenData } from '../response/long-lived-token-data';
-import { REFUSED } from 'dns';
-import { TokenServiceBindings } from '../../keys/token-service.bindings';
-import { TokenService } from '@loopback/authentication';
 const client = require('request-promise');
 
 @bind({ scope: BindingScope.CONTEXT })
-export class InstagramService {
+export class FacebookService {
 
   private graphUrl: string;
   private authenticationUrl: string;
@@ -18,7 +14,7 @@ export class InstagramService {
   private redirectUri: string;
   private instagramUrl: string;
 
-  constructor() {
+  constructor(/* Add @inject to inject parameters */) {
     this.graphUrl = 'https://graph.instagram.com';
     this.authenticationUrl = 'https://api.instagram.com/oauth/access_token';
     this.instagramUrl = 'https://www.instagram.com';
@@ -42,14 +38,6 @@ export class InstagramService {
     }
     const response = JSON.parse(await client(options));
     return response;
-  }
-
-  public async getlongLivedAccessToken(token: string): Promise<LongLivedTokenData> {
-    const options = {
-      method: 'GET',
-      uri: `${this.graphUrl}/access_token?grant_type=ig_exchange_token&client_secret=${this.appSecret}&access_token=${token}`
-    }
-    return JSON.parse(await client(options));
   }
 
   public async getBasicUserData(token: string): Promise<BasicData> {

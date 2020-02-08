@@ -5,5 +5,5 @@ export class InstagramSignupRequest {
   @property()
   code: string;
   @property()
-  password: string;
+  password?: string;
 }

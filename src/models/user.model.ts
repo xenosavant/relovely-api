@@ -16,6 +16,12 @@ export class User extends Entity {
   username: string;
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  instagramUsername?: string;
+
+  @property({
     type: 'string'
   })
   firstName?: string;
@@ -33,13 +39,18 @@ export class User extends Entity {
   @property({
     type: 'string'
   })
+  passwordSalt?: string;
+
+  @property({
+    type: 'string'
+  })
   instagramAuthToken?: string;
 
   @property({
     type: 'string',
     required: true
   })
-  signedInWithInstagram: string;
+  signedInWithInstagram: boolean;
 
   @property({
     type: 'string'

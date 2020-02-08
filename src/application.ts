@@ -8,10 +8,15 @@ import { RepositoryMixin } from '@loopback/repository';
 import { RestApplication, RestBindings } from '@loopback/rest';
 import { ServiceMixin } from '@loopback/service-proxy';
 import path from 'path';
-import { MySequence } from './sequence';
+import { Sequence } from './sequence';
 import { DbDataSource } from './datasources/db.datasource';
 import { runInThisContext } from 'vm';
 import { UserRepository } from './repositories';
+import { AuthenticationComponent } from '@loopback/authentication';
+import { TokenServiceBindings } from './keys/token-service.bindings'
+import { TokenService } from "@loopback/authentication";
+import { JWTService } from './services/authentication/jwt.service';
+import { BcryptHasher } from './services/authentication/hash.bcrypt';
 
 export class RelovelyApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -20,7 +25,7 @@ export class RelovelyApplication extends BootMixin(
     super(options);
 
     // Set up the custom sequence
-    this.sequence(MySequence);
+    this.sequence(Sequence);
 
     // Set up default home page
     this.static('/', path.join(__dirname, '../public'));
@@ -40,6 +45,18 @@ export class RelovelyApplication extends BootMixin(
     this.repository(UserRepository);
 
     this.component(RestExplorerComponent);
+    this.component(AuthenticationComponent);
+
+    this.bind(TokenServiceBindings.TOKEN_SECRET).to(
+      process.env.JWT_SECRET as string,
+    );
+
+    this.bind(TokenServiceBindings.TOKEN_EXPIRATION_TIME).to(
+      process.env.JWT_EXPIRATION as string,
+    );
+
+    this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
+    this.bind(TokenServiceBindings.HASH_SERVICE).toClass(BcryptHasher);
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
