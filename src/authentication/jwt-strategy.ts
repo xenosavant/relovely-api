@@ -9,7 +9,7 @@ import { service } from '@loopback/core';
 import { UserRepository } from '../repositories';
 import { InstagramService } from '../services';
 import { User } from '../models';
-import { AppUserService } from '../services/user/user.service';
+import { AppCredentialService } from '../services/authentication/credential.service';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name: string = 'jwt';
@@ -21,14 +21,14 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     public userRepository: UserRepository,
     @service(InstagramService)
     public instagramService: InstagramService,
-    @service(AppUserService)
-    public userService: AppUserService
+    @inject('services.AppCredentialService')
+    public credentialService: AppCredentialService,
   ) { }
 
   async authenticate(request: Request): Promise<UserProfile | undefined> {
     const token: string = this.extractCredentials(request);
     const userProfile: UserProfile = await this.tokenService.verifyToken(token);
-    this.userService.verifyCredentials({ jwt: token, id: userProfile.id })
+    this.credentialService.verifyCredentials({ id: userProfile.id })
     return userProfile;
   }
 

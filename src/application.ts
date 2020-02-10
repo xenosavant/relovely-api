@@ -12,11 +12,13 @@ import { Sequence } from './sequence';
 import { DbDataSource } from './datasources/db.datasource';
 import { runInThisContext } from 'vm';
 import { UserRepository } from './repositories';
-import { AuthenticationComponent } from '@loopback/authentication';
+import { AuthenticationComponent, registerAuthenticationStrategy } from '@loopback/authentication';
 import { TokenServiceBindings } from './keys/token-service.bindings'
 import { TokenService } from "@loopback/authentication";
 import { JWTService } from './services/authentication/jwt.service';
 import { BcryptHasher } from './services/authentication/hash.bcrypt';
+import { AppCredentialService } from './services/authentication/credential.service';
+import { JWTAuthenticationStrategy } from './authentication/jwt-strategy';
 
 export class RelovelyApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -40,6 +42,8 @@ export class RelovelyApplication extends BootMixin(
       require('dotenv').config();
     }
 
+    registerAuthenticationStrategy(this as any, JWTAuthenticationStrategy);
+
     this.dataSource(new DbDataSource());
 
     this.repository(UserRepository);
@@ -57,6 +61,11 @@ export class RelovelyApplication extends BootMixin(
 
     this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
     this.bind(TokenServiceBindings.HASH_SERVICE).toClass(BcryptHasher);
+
+
+    // Services
+
+    this.bind('services.AppCredentialService').toClass(AppCredentialService);
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

@@ -20,7 +20,7 @@ export async function hashPassword(
 }
 
 export interface PasswordHasher<T = string> {
-  hashPassword(password: T, salt: string): Promise<T>;
+  hashPassword(password: T): Promise<T>;
   comparePassword(providedPass: T, storedPass: T): Promise<boolean>;
 }
 
@@ -30,8 +30,8 @@ export class BcryptHasher implements PasswordHasher<string> {
 
   constructor() { }
 
-  async hashPassword(password: string, salt: string = ''): Promise<string> {
-    return hash(password, salt);
+  async hashPassword(password: string): Promise<string> {
+    return hash(password, this.rounds);
   }
 
   async comparePassword(

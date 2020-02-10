@@ -22,11 +22,13 @@ import { UserRepository, ProductRepository } from '../../repositories';
 import { UserList, userListFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
+import { authenticate } from '@loopback/authentication';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(ProductRepository)
     public productsRepository: ProductRepository,
   ) { }
 
@@ -69,6 +71,7 @@ export class UserController {
       },
     },
   })
+  @authenticate('jwt')
   async count(
     @param.query.object('where', getWhereSchemaFor(User)) where?: Where<User>,
   ): Promise<Count> {

@@ -8,6 +8,7 @@ import {
   RestBindings,
   Send,
   SequenceHandler,
+  HttpErrors,
 } from '@loopback/rest';
 import { AuthenticateFn, AUTHENTICATION_STRATEGY_NOT_FOUND, USER_PROFILE_NOT_FOUND, AuthenticationBindings } from '@loopback/authentication';
 
@@ -40,10 +41,11 @@ export class Sequence implements SequenceHandler {
         error.code === AUTHENTICATION_STRATEGY_NOT_FOUND ||
         error.code === USER_PROFILE_NOT_FOUND
       ) {
-        Object.assign(error, { statusCode: 401 /* Unauthorized */ });
+        this.reject(context, new HttpErrors.Unauthorized('Authorization failed'));
+      } else {
+        this.reject(context, error);
+        return;
       }
-
-
     }
   }
 }
