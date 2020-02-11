@@ -47,35 +47,32 @@ export class InstagramController {
     })
     request: InstagramSignupRequest,
   ): Promise<InstagramSignupResponse> {
-    try {
-      const authResponse = await this.instagramService.getAccessToken(request.code);
-      const data = await this.instagramService.getBasicUserData(authResponse.access_token);
-      const profile = await this.instagramService.getUserProfile(data.username);
-      const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token)
 
-      // TODO: check to make sure username is not taken
+    const authResponse = await this.instagramService.getAccessToken(request.code);
+    const data = await this.instagramService.getBasicUserData(authResponse.access_token);
+    const profile = await this.instagramService.getUserProfile(data.username);
+    const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token)
 
-      const user = await this.userRepository.create({
-        username: data.username,
-        profileImageUrl: profile.graphql.user.profile_pic_url_hd,
-        isSeller: false,
-        signedInWithInstagram: true,
-        signedInWithFacebook: false,
-        instagramAuthToken: longLivedToken.access_token,
-        instagramUsername: data.username
-      });
+    // TODO: check to make sure username is not taken
 
-      const userProfile = {} as UserProfile;
-      userProfile.id = (user.id as string).toString();
-      userProfile.name = user.username;
-      userProfile.type = 'instagram';
+    const user = await this.userRepository.create({
+      username: data.username,
+      profileImageUrl: profile.graphql.user.profile_pic_url_hd,
+      isSeller: false,
+      signedInWithInstagram: true,
+      signedInWithFacebook: false,
+      instagramAuthToken: longLivedToken.access_token,
+      instagramUsername: data.username
+    });
 
-      const jwt = await this.tokenService.generateToken(userProfile);
+    const userProfile = {} as UserProfile;
+    userProfile.id = (user.id as string).toString();
+    userProfile.name = user.username;
+    userProfile.type = 'instagram';
 
-      return { user: user, jwt: jwt };
-    } catch (e) {
-      throw e;
-    }
+    const jwt = await this.tokenService.generateToken(userProfile);
+
+    return { user: user, jwt: jwt };
   }
 
   @post('/instagram/signin', {
