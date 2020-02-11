@@ -21,13 +21,13 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            ssh -o StrictHostKeyChecking=no root@$DROPLET_IP bash -c '
+            ssh -o StrictHostKeyChecking=no circleci@$DROPLET_IP bash -c '
             cat ~/password.txt | docker login --username relovely --password-stdin;
             docker stop $(docker ps -a -q);
-            docker rm -f $(docker ps -a -q)
+            docker rm -f $(docker ps -a -q);
             docker rmi -f $(docker images -q);
             docker pull relovely/relovely-api:latest;
-            docker run --env-file ~/env.config -d -p 80:3000 relovely/relovely-api'
+            docker run --env-file ~/env.config -d -p 127.0.0.1:3000:3000 relovely/relovely-api'
 workflows:
   version: 2
   build-master:
