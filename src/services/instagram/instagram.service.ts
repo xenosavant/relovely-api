@@ -24,7 +24,7 @@ export class InstagramService {
     this.instagramUrl = 'https://www.instagram.com';
     this.appId = process.env.INSTAGRAM_APP_ID as string;
     this.appSecret = process.env.INSTAGRAM_APP_SECRET as string;
-    this.redirectUri = process.env.INSTAGRAM_REDIRECT_URI as string;
+    this.redirectUri = process.env.INSTAGRAM_SIGNIN_REDIRECT_URI as string;
   }
 
   public async getAccessToken(code: string): Promise<AuthData> {
