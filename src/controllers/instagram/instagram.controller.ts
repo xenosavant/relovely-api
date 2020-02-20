@@ -58,7 +58,7 @@ export class InstagramController {
     const user = await this.userRepository.create({
       username: data.username,
       profileImageUrl: profile.graphql.user.profile_pic_url_hd,
-      isSeller: false,
+      type: 'member',
       signedInWithInstagram: true,
       signedInWithFacebook: false,
       instagramAuthToken: longLivedToken.access_token,

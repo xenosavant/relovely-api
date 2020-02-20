@@ -76,10 +76,10 @@ export class User extends Entity {
   profileImageUrl?: string;
 
   @property({
-    type: 'boolean',
+    type: 'string',
     required: true,
   })
-  isSeller: boolean;
+  type: string;
 
   @property.array(String, {
     type: 'string',

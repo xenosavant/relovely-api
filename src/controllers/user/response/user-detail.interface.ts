@@ -16,4 +16,5 @@ export interface UserDetail {
   following?: UserList;
   sales?: Product[];
   favorites?: Product[];
+  type: string;
 }

@@ -58,7 +58,7 @@ export class AuthController {
 
     const user = await this.userRepository.create({
       email: request.email,
-      isSeller: false,
+      type: 'member',
       signedInWithInstagram: false,
       signedInWithFacebook: false,
       passwordHash: hash

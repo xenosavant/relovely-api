@@ -23,6 +23,7 @@ import { UserList, userListFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
 import { authenticate } from '@loopback/authentication';
+import { userDetailFields } from "../user/response/user-list.interface";
 
 export class UserController {
   constructor(
@@ -115,11 +116,11 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string
   ): Promise<UserDetail> {
-    const user = await this.userRepository.findById(id);
+    const user = await this.userRepository.findById(id, { fields: userDetailFields });
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
     const promises: Promise<any>[] = []
-    if (user.isSeller) {
+    if (user.type === 'seller') {
       promises.push(
         this.productsRepository.find({
           where: { id: { inq: user.sales } },
