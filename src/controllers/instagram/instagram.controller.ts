@@ -107,7 +107,7 @@ export class InstagramController {
 
     const user = await this.userRepository.findOne({ where: { username: profile.graphql.user.username } });
     if (!user) {
-      throw new HttpErrors.Unauthorized;
+      throw new HttpErrors.Forbidden;
     }
 
     user.signedInWithInstagram = true;

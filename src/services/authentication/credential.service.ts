@@ -23,15 +23,15 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
     });
 
     if (!foundUser) {
-      throw new HttpErrors.Unauthorized();
+      throw new HttpErrors.Forbidden();
     }
 
     if (!foundUser.passwordHash) {
-      throw new HttpErrors.Unauthorized();
+      throw new HttpErrors.Forbidden();
     }
     const valid = await this.verifyPassword(foundUser.passwordHash as string, credentials.password);
     if (!valid) {
-      throw new HttpErrors.Unauthorized();
+      throw new HttpErrors.Forbidden();
     }
 
     return foundUser;
