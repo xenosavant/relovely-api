@@ -19,13 +19,31 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
 
   async verifyCredentials(credentials: Credentials): Promise<User> {
     const foundUser = await this.userRepository.findOne({
-      where: { id: credentials.id },
+      where: { email: credentials.identifier },
     });
 
     if (!foundUser) {
-      throw new HttpErrors.NotFound(
-        `User with id ${credentials.id} not found.`,
-      );
+      throw new HttpErrors.Unauthorized();
+    }
+
+    if (!foundUser.passwordHash) {
+      throw new HttpErrors.Unauthorized();
+    }
+    const valid = await this.verifyPassword(foundUser.passwordHash as string, credentials.password);
+    if (!valid) {
+      throw new HttpErrors.Unauthorized();
+    }
+
+    return foundUser;
+  }
+
+  async verifyUser(userId: string) {
+    const foundUser = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!foundUser) {
+      throw new HttpErrors.Unauthorized();
     }
 
     return foundUser;

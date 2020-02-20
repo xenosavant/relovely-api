@@ -51,7 +51,7 @@ export class AuthController {
     const existing = await this.userRepository.findOne({ where: { email: request.email } });
 
     if (existing) {
-      throw new HttpErrors.Conflict;
+      throw new HttpErrors.Conflict('Email already exists');
     }
 
     const hash = await this.credentialService.hashPassword(request.password);
@@ -98,17 +98,7 @@ export class AuthController {
 
     // TODO: check to make sure username is not taken
 
-    const user = await this.userRepository.findOne({ where: { email: request.email } });
-
-    if (!user || !user.passwordHash) {
-      throw new HttpErrors.Unauthorized;
-    }
-
-    const valid = await this.credentialService.verifyCredentials({ id: (user.id as string) });
-
-    if (!valid) {
-      throw new HttpErrors.Unauthorized;
-    }
+    const user = await this.credentialService.verifyCredentials({ identifier: request.email, password: request.password });
 
     const userProfile = {} as UserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), name: user.email, type: 'internal' });

@@ -1,3 +1,4 @@
 export interface Credentials {
-  id: string;
+  identifier: string;
+  password: string;
 }
