@@ -26,7 +26,7 @@ export interface PasswordHasher<T = string> {
 
 export class BcryptHasher implements PasswordHasher<string> {
 
-  private readonly rounds: number = 10000;
+  private readonly rounds: number = 1000;
 
   constructor() { }
 

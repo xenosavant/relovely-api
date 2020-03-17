@@ -1,4 +1,6 @@
 import { Entity, model, property } from '@loopback/repository';
+import { VideoMetaData } from './video-meta-data.model';
+import { ImageSet } from './image-set';
 
 @model({ settings: { strict: true } })
 export class Product extends Entity {
@@ -22,21 +24,15 @@ export class Product extends Entity {
   })
   title: string;
 
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  imageUrls?: string[];
+  @property.array(ImageSet)
+  images?: ImageSet[];
 
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  videoUrls?: string[];
+  @property.array(VideoMetaData)
+  videos?: VideoMetaData[];
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   description?: string;
 
@@ -62,7 +58,7 @@ export class Product extends Entity {
     type: 'string',
     required: true,
   })
-  categoryIds?: string[];
+  categoryIds: string[];
 
   @property({
     type: 'string',
