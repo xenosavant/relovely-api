@@ -1,13 +1,13 @@
 import { repository } from "@loopback/repository";
 import { UserRepository } from "../../repositories";
 import { post, getModelSchemaRef, requestBody, HttpErrors } from "@loopback/rest";
-import { InstagramSignupResponse } from "../instagram/response/instagram-signup-response";
+import { OAuthResponse } from "../../authentication/oauth-response";
 import { AuthRequest } from "./auth-request";
 import { inject, service } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { TokenService } from "@loopback/authentication";
 import { AppCredentialService } from "../../services/authentication/credential.service";
-import { UserProfile } from "@loopback/security";
+import { AppUserProfile } from "../../authentication/app-user-profile";
 
 // Uncomment these imports to begin using these cool features!
 
@@ -29,7 +29,7 @@ export class AuthController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(InstagramSignupResponse)
+            schema: getModelSchemaRef(OAuthResponse)
           }
         },
       },
@@ -44,7 +44,7 @@ export class AuthController {
       },
     })
     request: AuthRequest
-  ): Promise<InstagramSignupResponse> {
+  ): Promise<OAuthResponse> {
 
     // TODO: check to make sure username is not taken
 
@@ -64,8 +64,8 @@ export class AuthController {
       passwordHash: hash
     });
 
-    const userProfile = {} as UserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), name: user.email, type: 'internal' });
+    const userProfile = {} as AppUserProfile;
+    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 
@@ -79,7 +79,7 @@ export class AuthController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(InstagramSignupResponse)
+            schema: getModelSchemaRef(OAuthResponse)
           }
         },
       },
@@ -94,14 +94,14 @@ export class AuthController {
       },
     })
     request: AuthRequest,
-  ): Promise<InstagramSignupResponse> {
+  ): Promise<OAuthResponse> {
 
     // TODO: check to make sure username is not taken
 
     const user = await this.credentialService.verifyCredentials({ identifier: request.email, password: request.password });
 
-    const userProfile = {} as UserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), name: user.email, type: 'internal' });
+    const userProfile = {} as AppUserProfile;
+    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 

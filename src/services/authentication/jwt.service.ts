@@ -2,13 +2,13 @@ import { inject } from '@loopback/context';
 import { HttpErrors } from '@loopback/rest';
 import { promisify } from 'util';
 import { TokenService } from '@loopback/authentication';
-import { UserProfile } from '@loopback/security';
 import { TokenServiceBindings } from '../../keys/token-service.bindings'
 import { repository } from '@loopback/repository';
 import { UserRepository } from '../../repositories';
 import { User } from '../../models';
 import { service } from '@loopback/core';
 import { InstagramService } from '..';
+import { AppUserProfile } from '../../authentication/app-user-profile';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -22,14 +22,14 @@ export class JWTService implements TokenService {
     private jwtExpiresIn: string
   ) { }
 
-  async verifyToken(token: string): Promise<UserProfile> {
+  async verifyToken(token: string): Promise<AppUserProfile> {
     if (!token) {
       throw new HttpErrors.Unauthorized(
         `Error verifying token: 'token' is null`,
       );
     }
 
-    const userProfile = {} as UserProfile;
+    const userProfile = {} as AppUserProfile;
 
     try {
       // decode user profile from token
@@ -48,7 +48,7 @@ export class JWTService implements TokenService {
     return userProfile;
   }
 
-  async generateToken(userProfile: UserProfile): Promise<string> {
+  async generateToken(userProfile: AppUserProfile): Promise<string> {
     if (!userProfile) {
       throw new HttpErrors.Unauthorized(
         'Error generating token: userProfile is null',

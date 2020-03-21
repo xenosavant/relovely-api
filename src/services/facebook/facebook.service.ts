@@ -2,6 +2,9 @@ import { bind, /* inject, */ BindingScope } from '@loopback/core';
 import { AuthData } from '../response/auth-data';
 import { BasicData } from '../response/basic-data';
 import { ProfileData } from '../response/profile-data';
+import { LongLivedTokenData } from '../response/long-lived-token-data';
+import { FacebookUser } from '../../authentication/facebook-user';
+
 const client = require('request-promise');
 
 @bind({ scope: BindingScope.CONTEXT })
@@ -12,50 +15,53 @@ export class FacebookService {
   private appId: string;
   private appSecret: string;
   private redirectUri: string;
-  private instagramUrl: string;
 
   constructor(/* Add @inject to inject parameters */) {
-    this.graphUrl = 'https://graph.instagram.com';
-    this.authenticationUrl = 'https://api.instagram.com/oauth/access_token';
-    this.instagramUrl = 'https://www.instagram.com';
-    this.appId = process.env.INSTAGRAM_APP_ID as string;
-    this.appSecret = process.env.INSTAGRAM_APP_SECRET as string;
-    this.redirectUri = process.env.INSTAGRAM_SIGNIN_REDIRECT_URI as string;
+    this.graphUrl = 'https://graph.facebook.com';
+    this.authenticationUrl = 'https://graph.facebook.com/v6.0/oauth/access_token';
+    this.appId = process.env.FACEBOOK_APP_ID as string;
+    this.appSecret = process.env.FACEBOOK_APP_SECRET as string;
+    this.redirectUri = process.env.FACEBOOK_SIGNIN_REDIRECT_URI as string;
   }
 
-  public async getAccessToken(code: string): Promise<AuthData> {
+  public async getAccessToken(code: string, type: 'signin' | 'signup' | 'link'): Promise<AuthData> {
+    let redirect_uri: string = this.redirectUri;
+    if (type) {
+      redirect_uri = `${redirect_uri}?type=${type}`;
+    }
     const options = {
-      method: 'POST',
-      uri: this.authenticationUrl,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      form: {
-        code: code,
-        client_id: this.appId,
-        client_secret: this.appSecret,
-        redirect_uri: this.redirectUri,
-        grant_type: 'authorization_code'
-      }
+      method: 'GET',
+      uri: `${this.authenticationUrl}?code=${code}&client_id=${this.appId}&client_secret=${this.appSecret}&redirect_uri=${redirect_uri}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }
     const response = JSON.parse(await client(options));
     return response;
   }
 
-  public async getBasicUserData(token: string): Promise<BasicData> {
+  public async getBasicUserData(token: string): Promise<FacebookUser> {
     const options = {
       method: 'GET',
-      uri: `${this.graphUrl}/me?fields=username&access_token=${token}`,
+      uri: `${this.graphUrl}/me?access_token=${token}&fields=id,name`,
       headers: { 'Content-Type': 'application/json' }
     }
     const response = JSON.parse(await client(options));
-    return { username: response.username };
+    return response;
   }
 
-  public async getUserProfile(username: string): Promise<ProfileData> {
+  public async getProfilePicture(token: string): Promise<string> {
     const options = {
       method: 'GET',
-      uri: `${this.instagramUrl}/${username}/?__a=1`
+      uri: `${this.graphUrl}/me/picture?access_token=${token}&height=500&width=500`,
+      headers: { 'Content-Type': 'application/json' }
     }
-    const response = JSON.parse(await client(options));
-    return response;
+    return await client(options);
+  }
+
+  public async getlongLivedAccessToken(token: string): Promise<LongLivedTokenData> {
+    const options = {
+      method: 'GET',
+      uri: `${this.graphUrl}/v6.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${this.appId}&client_secret=${this.appSecret}&fb_exchange_token=${token}`
+    }
+    return JSON.parse(await client(options));
   }
 }

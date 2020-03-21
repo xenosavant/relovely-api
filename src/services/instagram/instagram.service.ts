@@ -15,7 +15,7 @@ export class InstagramService {
   private authenticationUrl: string;
   private appId: string;
   private appSecret: string;
-  private redirectUri: string;
+  private signupRedirectUri: string;
   private instagramUrl: string;
 
   constructor() {
@@ -24,7 +24,7 @@ export class InstagramService {
     this.instagramUrl = 'https://www.instagram.com';
     this.appId = process.env.INSTAGRAM_APP_ID as string;
     this.appSecret = process.env.INSTAGRAM_APP_SECRET as string;
-    this.redirectUri = process.env.INSTAGRAM_SIGNIN_REDIRECT_URI as string;
+    this.signupRedirectUri = process.env.INSTAGRAM_SIGNUP_REDIRECT_URI as string;
   }
 
   public async getAccessToken(code: string): Promise<AuthData> {
@@ -36,7 +36,7 @@ export class InstagramService {
         code: code,
         client_id: this.appId,
         client_secret: this.appSecret,
-        redirect_uri: this.redirectUri,
+        redirect_uri: this.signupRedirectUri,
         grant_type: 'authorization_code'
       }
     }

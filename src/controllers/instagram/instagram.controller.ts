@@ -2,14 +2,15 @@ import { post, getModelSchemaRef, requestBody, HttpErrors } from "@loopback/rest
 import { User } from "../../models";
 import { repository } from "@loopback/repository";
 import { UserRepository } from "../../repositories";
-import { InstagramSignupRequest } from './request/instagram-signup-request.interface';
 import { InstagramService } from "../../services";
 import { service, inject } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { TokenService } from "@loopback/authentication";
-import { InstagramSignupResponse } from './response/instagram-signup-response';
-import { UserProfile } from "@loopback/security";
+import { OAuthResponse } from '../../authentication/oauth-response';
 import { userDetailFields } from "../user/response/user-list.interface";
+import { AppUserProfile } from "../../authentication/app-user-profile";
+import { OAuthRequest } from "../../authentication/oauth-request";
+import { AppCredentialService } from "../../services/authentication/credential.service";
 
 // Uncomment these imports to begin using these cool features!
 
@@ -23,7 +24,9 @@ export class InstagramController {
     @service(InstagramService)
     public instagramService: InstagramService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public tokenService: TokenService) { }
+    public tokenService: TokenService,
+    @inject('services.AppCredentialService')
+    public credentialService: AppCredentialService) { }
 
   @post('/instagram/signup', {
     responses: {
@@ -31,7 +34,7 @@ export class InstagramController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(InstagramSignupResponse)
+            schema: getModelSchemaRef(OAuthResponse)
           }
         },
       },
@@ -41,12 +44,12 @@ export class InstagramController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(InstagramSignupRequest),
+          schema: getModelSchemaRef(OAuthRequest),
         },
       },
     })
-    request: InstagramSignupRequest,
-  ): Promise<InstagramSignupResponse> {
+    request: OAuthRequest,
+  ): Promise<OAuthResponse> {
 
     const authResponse = await this.instagramService.getAccessToken(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
@@ -62,60 +65,14 @@ export class InstagramController {
       signedInWithInstagram: true,
       signedInWithFacebook: false,
       instagramAuthToken: longLivedToken.access_token,
-      instagramUsername: data.username
+      instagramUsername: data.username,
+      instagramUserId: profile.graphql.user.id
     });
 
-    const userProfile = {} as UserProfile;
+    const userProfile = {} as AppUserProfile;
     userProfile.id = (user.id as string).toString();
     userProfile.name = user.username;
     userProfile.type = 'instagram';
-
-    const jwt = await this.tokenService.generateToken(userProfile);
-
-    return { user: user, jwt: jwt };
-  }
-
-  @post('/instagram/signin', {
-    responses: {
-      '200': {
-        description: 'User model instance',
-        content: {
-          'application/json': {
-            schema: getModelSchemaRef(InstagramSignupResponse)
-          }
-        },
-      },
-    },
-  })
-  async signin(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(InstagramSignupRequest),
-        },
-      },
-    })
-    request: InstagramSignupRequest,
-  ): Promise<InstagramSignupResponse> {
-
-    const authResponse = await this.instagramService.getAccessToken(request.code);
-    const data = await this.instagramService.getBasicUserData(authResponse.access_token);
-    const profile = await this.instagramService.getUserProfile(data.username);
-    const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token)
-
-    // TODO: check to make sure username is not taken
-
-    const user = await this.userRepository.findOne({ where: { username: profile.graphql.user.username } });
-    if (!user) {
-      throw new HttpErrors.Forbidden;
-    }
-
-    user.signedInWithInstagram = true;
-    user.instagramAuthToken = longLivedToken.access_token;
-
-    await this.userRepository.update(user);
-    const userProfile = {} as UserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), email: user.username, type: 'instagram' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 

@@ -54,6 +54,11 @@ export class User extends Entity {
   instagramAuthToken?: string;
 
   @property({
+    type: 'string'
+  })
+  instagramUserId?: string;
+
+  @property({
     type: 'string',
     required: true
   })
@@ -69,6 +74,11 @@ export class User extends Entity {
     required: true
   })
   signedInWithFacebook: boolean;
+
+  @property({
+    type: 'string'
+  })
+  facebookUserId?: string;
 
   @property({
     type: 'string'

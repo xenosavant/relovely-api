@@ -5,10 +5,10 @@ import { HttpErrors } from "@loopback/rest";
 import { repository } from "@loopback/repository";
 import { UserRepository } from "../../repositories";
 import { PasswordHasher, BcryptHasher } from "./hash.bcrypt";
-import { UserProfile } from "@loopback/security";
 import { PasswordManager } from '../user/password-manager';
 import { inject } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
+import { AppUserProfile } from "../../authentication/app-user-profile";
 
 export class AppCredentialService implements UserService<User, Credentials>, PasswordManager {
   constructor(
@@ -49,11 +49,11 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
     return foundUser;
   }
 
-  convertToUserProfile(user: User): UserProfile {
+  convertToUserProfile(user: User): AppUserProfile {
     // since first name and lastName are optional, no error is thrown if not provided
     let userName = '';
 
-    const userProfile = {} as UserProfile;
+    const userProfile = {} as AppUserProfile;
     userProfile['id'] = user.id;
     userProfile['name'] = userName;
     userProfile['type'] = 'internal';
