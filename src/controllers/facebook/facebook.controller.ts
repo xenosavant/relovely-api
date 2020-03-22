@@ -78,7 +78,6 @@ export class FacebookController {
     const cloudinaryResponse = await this.cloudinaryService.upload(prefix + imageBase64, user.id as string);
 
     user.profileImageUrl = cloudinaryResponse.url;
-
     this.userRepository.update(user);
 
     const userProfile = {} as AppUserProfile;

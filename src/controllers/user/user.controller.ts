@@ -123,7 +123,7 @@ export class UserController {
     if (user.type === 'seller') {
       promises.push(
         this.productsRepository.find({
-          where: { id: { inq: user.sales } },
+          where: { id: { inq: user.sales || [] } },
           fields: userListFields
         }).then(result => {
           promiseDictionary['sales'] = result;
@@ -135,7 +135,7 @@ export class UserController {
           promiseDictionary['listings'] = result;
         }),
         this.userRepository.find({
-          where: { id: { inq: user.followers } },
+          where: { id: { inq: user.followers || [] } },
           fields: userListFields
         }).then(result => {
           promiseDictionary['followers'] = result;
@@ -143,13 +143,13 @@ export class UserController {
     }
     promises.push(
       this.userRepository.find({
-        where: { id: { inq: user.favorites } },
+        where: { id: { inq: user.favorites || [] } },
         fields: userListFields
       }).then(result => {
         promiseDictionary['favorites'] = result;
       }),
       this.userRepository.find({
-        where: { id: { inq: user.following } },
+        where: { id: { inq: user.following || [] } },
         fields: userListFields
       }).then(result => {
         promiseDictionary['following'] = result;

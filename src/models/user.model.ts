@@ -86,6 +86,16 @@ export class User extends Entity {
   profileImageUrl?: string;
 
   @property({
+    type: 'string'
+  })
+  emailVerificationCode?: string;
+
+  @property({
+    type: 'string'
+  })
+  emailVerified?: boolean;
+
+  @property({
     type: 'string',
     required: true,
   })
