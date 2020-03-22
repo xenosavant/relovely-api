@@ -21,7 +21,7 @@ export class FacebookService {
     this.authenticationUrl = 'https://graph.facebook.com/v6.0/oauth/access_token';
     this.appId = process.env.FACEBOOK_APP_ID as string;
     this.appSecret = process.env.FACEBOOK_APP_SECRET as string;
-    this.redirectUri = process.env.FACEBOOK_SIGNIN_REDIRECT_URI as string;
+    this.redirectUri = process.env.FACEBOOK_AUTH_REDIRECT_URI as string;
   }
 
   public async getAccessToken(code: string, type: 'signin' | 'signup' | 'link'): Promise<AuthData> {
@@ -48,11 +48,11 @@ export class FacebookService {
     return response;
   }
 
-  public async getProfilePicture(token: string): Promise<string> {
+  public async getProfilePicture(token: string): Promise<any> {
     const options = {
       method: 'GET',
       uri: `${this.graphUrl}/me/picture?access_token=${token}&height=500&width=500`,
-      headers: { 'Content-Type': 'application/json' }
+      encoding: null
     }
     return await client(options);
   }

@@ -11,6 +11,8 @@ import { OAuthRequest } from "../../authentication/oauth-request";
 import { AppCredentialService } from "../../services/authentication/credential.service";
 import { SecurityBindings } from '@loopback/security';
 import { User } from "../../models";
+import { CloudinaryService } from "../../services";
+import * as fs from 'fs';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -26,7 +28,9 @@ export class FacebookController {
     public tokenService: TokenService,
     @inject('services.AppCredentialService')
     public credentialService: AppCredentialService,
-    @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile) { }
+    @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile,
+    @service(CloudinaryService)
+    public cloudinaryService: CloudinaryService) { }
 
   @post('/facebook/signup', {
     responses: {
@@ -68,7 +72,15 @@ export class FacebookController {
       facebookUserId: fbuser.id
     });
 
-    // call cloudinary service to upload image then add to user record
+    const prefix = 'data:image/jpeg;base64,';
+    let imageBuffer = Buffer.from(picture);
+    let imageBase64 = imageBuffer.toString('base64');
+    const cloudinaryResponse = await this.cloudinaryService.upload(prefix + imageBase64, user.id as string);
+
+    user.profileImageUrl = cloudinaryResponse.url;
+
+    this.userRepository.update(user);
+
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'facebook' });
 

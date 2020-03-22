@@ -1,8 +1,38 @@
 import { bind, /* inject, */ BindingScope } from '@loopback/core';
+import { v2, UploadApiOptions } from 'cloudinary';
 
-@bind({ scope: BindingScope.TRANSIENT })
+@bind({ scope: BindingScope.CONTEXT })
 export class CloudinaryService {
-  constructor(/* Add @inject to inject parameters */) { }
 
+  private key: string;
+  private secret: string;
+  private imageUploadPreset: string;
+
+  constructor(/* Add @inject to inject parameters */) {
+    this.key = process.env.CLOUDINARY_API_KEY as string;
+    this.secret = process.env.CLOUDINARY_API_SECRET as string;
+    this.imageUploadPreset = process.env.CLOUDINARY_IMAGE_UPLOAD_PRESET as string;
+    v2.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+  }
+
+  public async getSignature(folder: string, timestamp: string): Promise<string> {
+    return await v2.utils.api_sign_request({ timestamp: timestamp, folder: folder, upload_preset: this.imageUploadPreset }, this.secret);
+  }
+
+  public async upload(image: string, id: string) {
+    const timestamp = Date.now();
+    const signature = await this.getSignature(`${id}/images`, timestamp.toString());
+    return await v2.uploader.upload(image, {
+      upload_preset: this.imageUploadPreset,
+      signature: signature,
+      folder: `${id}/images`,
+      api_key: this.key,
+      timestamp: timestamp
+    });
+  }
 
 }
