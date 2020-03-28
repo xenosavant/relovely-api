@@ -6,7 +6,7 @@ import { InstagramService } from "../../services";
 import { service, inject } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { TokenService } from "@loopback/authentication";
-import { OAuthResponse } from '../../authentication/oauth-response';
+import { AuthResponse } from '../../authentication/auth-response';
 import { userDetailFields } from "../user/response/user-list.interface";
 import { AppUserProfile } from "../../authentication/app-user-profile";
 import { OAuthRequest } from "../../authentication/oauth-request";
@@ -34,7 +34,7 @@ export class InstagramController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -49,7 +49,7 @@ export class InstagramController {
       },
     })
     request: OAuthRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
 
     const authResponse = await this.instagramService.getAccessToken(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);

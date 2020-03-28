@@ -93,6 +93,11 @@ export class User extends Entity {
   @property({
     type: 'string'
   })
+  passwordVerificationCode?: string;
+
+  @property({
+    type: 'string'
+  })
   emailVerified?: boolean;
 
   @property({

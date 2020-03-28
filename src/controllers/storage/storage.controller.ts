@@ -1,7 +1,7 @@
 import { CloudinaryService } from "../../services";
 import { service } from "@loopback/core";
 import { getModelSchemaRef, requestBody, post } from "@loopback/rest";
-import { OAuthResponse } from "../../authentication/oauth-response";
+import { AuthResponse } from "../../authentication/auth-response";
 import { SignatureRequest } from './signature.request';
 import { SignatureResponse } from './signature.response';
 import { AppUserProfile } from "../../authentication/app-user-profile";

@@ -5,7 +5,7 @@ import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { TokenService, authenticate } from "@loopback/authentication";
 import { FacebookService } from "../../services/facebook/facebook.service";
 import { post, getModelSchemaRef, requestBody, HttpErrors } from "@loopback/rest";
-import { OAuthResponse } from "../../authentication/oauth-response";
+import { AuthResponse } from "../../authentication/auth-response";
 import { AppUserProfile } from "../../authentication/app-user-profile";
 import { OAuthRequest } from "../../authentication/oauth-request";
 import { AppCredentialService } from "../../services/authentication/credential.service";
@@ -38,7 +38,7 @@ export class FacebookController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -53,7 +53,7 @@ export class FacebookController {
       },
     })
     request: OAuthRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
 
     const authResponse = await this.facebookService.getAccessToken(request.code, 'signup');
     const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
@@ -93,7 +93,7 @@ export class FacebookController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -108,7 +108,7 @@ export class FacebookController {
       },
     })
     request: OAuthRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
 
     const authResponse = await this.facebookService.getAccessToken(request.code, 'signin');
     const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
@@ -138,7 +138,7 @@ export class FacebookController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -154,7 +154,7 @@ export class FacebookController {
       },
     })
     request: OAuthRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
 
     const authResponse = await this.facebookService.getAccessToken(request.code, 'link');
     const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)

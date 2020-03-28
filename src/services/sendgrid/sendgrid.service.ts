@@ -13,12 +13,11 @@ export class SendgridService {
     this.client.setApiKey(process.env.SENDGRID_API_KEY as string);
   }
 
-  public async sendEmail(to: string, subject: string, text: string, html: string, from: string = this.fromEmail) {
+  public async sendEmail(to: string, subject: string, html: string, from: string = this.fromEmail) {
     const msg = {
       to: to,
       from: from,
       subject: subject,
-      text: text,
       html: html
     };
 

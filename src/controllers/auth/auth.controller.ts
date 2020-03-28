@@ -1,7 +1,7 @@
 import { repository } from "@loopback/repository";
 import { UserRepository } from "../../repositories";
 import { post, getModelSchemaRef, requestBody, HttpErrors } from "@loopback/rest";
-import { OAuthResponse } from "../../authentication/oauth-response";
+import { AuthResponse } from "../../authentication/auth-response";
 import { AuthRequest } from "./auth-request";
 import { inject, service } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
@@ -12,6 +12,8 @@ import { SendgridService } from "../../services";
 import * as crypto from 'crypto'
 import { SignupResponse } from "./signup-response";
 import { VerifyEmailRequest } from "./verify-email.request";
+import { ResetPasswordRequest } from "./reset-password-request";
+import { PasswordEmailRequest } from "./password-email-request";
 
 // Uncomment these imports to begin using these cool features!
 
@@ -78,7 +80,6 @@ export class AuthController {
 
     await this.sendGridService.sendEmail(request.email,
       'Welcome To Relovely!',
-      'Welcome to relovely!',
       `Click <a href="https://192.34.56.220/account/verify?type=email&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
 
   }
@@ -89,7 +90,7 @@ export class AuthController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -104,11 +105,20 @@ export class AuthController {
       },
     })
     request: AuthRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
 
     const downcasedEmail = request.email.toLowerCase();
 
     const user = await this.credentialService.verifyCredentials({ identifier: downcasedEmail, password: request.password });
+
+    if (!user) {
+      throw new HttpErrors.Forbidden('Invalid Credentials');
+    }
+
+    if (!user.emailVerified) {
+      throw new HttpErrors.Forbidden('Please verify your email before logging in');
+    }
+
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
@@ -125,7 +135,7 @@ export class AuthController {
         description: 'User model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(OAuthResponse)
+            schema: getModelSchemaRef(AuthResponse)
           }
         },
       },
@@ -140,7 +150,11 @@ export class AuthController {
       },
     })
     request: VerifyEmailRequest,
-  ): Promise<OAuthResponse> {
+  ): Promise<AuthResponse> {
+
+    if (!request.code) {
+      throw new HttpErrors.Forbidden();
+    }
 
     const user = await this.userRepository.findOne({ where: { emailVerificationCode: request.code } });
 
@@ -148,13 +162,9 @@ export class AuthController {
       throw new HttpErrors.Forbidden();
     }
 
-    if (user.emailVerificationCode !== request.code) {
-      throw new HttpErrors.Forbidden();
-    }
-
     user.emailVerified = true;
     user.emailVerificationCode = undefined;
-    this.userRepository.update(user);
+    this.userRepository.save(user);
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
@@ -163,5 +173,86 @@ export class AuthController {
 
     return { user: user, jwt: jwt };
 
+  }
+
+  @post('auth/password/email', {
+    responses: {
+      '204': {
+        description: 'User model instance'
+      },
+    },
+  })
+  async emailPassword(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(PasswordEmailRequest),
+        },
+      },
+    })
+    request: PasswordEmailRequest,
+  ): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email: request.identifier } });
+
+    if (!user) {
+      throw new HttpErrors.Forbidden();
+    }
+
+    const verificationCode = crypto.createHash('sha256'),
+      verficationCodeString = verificationCode.digest('base64');
+
+    user.passwordVerificationCode = verficationCodeString;
+    await this.userRepository.save(user);
+
+    await this.sendGridService.sendEmail(user.email as string,
+      'Relovely - Reset Password',
+      `Click <a href="https://192.34.56.220/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
+  }
+
+  @post('auth/password/reset', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(AuthResponse)
+          }
+        },
+      },
+    },
+  })
+  async resetPassword(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(ResetPasswordRequest),
+        },
+      },
+    })
+    request: ResetPasswordRequest,
+  ): Promise<AuthResponse> {
+
+    if (!request.code) {
+      throw new HttpErrors.Forbidden();
+    }
+
+    const user = await this.userRepository.findOne({ where: { passwordVerificationCode: request.code } });
+
+    if (!user) {
+      throw new HttpErrors.Forbidden();
+    }
+
+    const hash = await this.credentialService.hashPassword(request.password);
+
+    user.passwordHash = hash;
+    user.passwordVerificationCode = undefined;
+    await this.userRepository.save(user);
+
+    const userProfile = {} as AppUserProfile;
+    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
+
+    const jwt = await this.tokenService.generateToken(userProfile);
+
+    return { user: user, jwt: jwt };
   }
 }
