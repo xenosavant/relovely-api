@@ -17,7 +17,7 @@ import {
   del,
   requestBody
 } from '@loopback/rest';
-import { User } from '../../models';
+import { User, UserWithRelations } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
 import { UserList, userListFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
@@ -116,24 +116,12 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string
   ): Promise<UserDetail> {
-    const user = await this.userRepository.findById(id, { fields: userDetailFields });
+    const user: UserWithRelations = await this.userRepository.findById(id, { fields: userDetailFields, include: [{ relation: 'products' }] });
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
     const promises: Promise<any>[] = []
     if (user.type === 'seller') {
       promises.push(
-        this.productsRepository.find({
-          where: { id: { inq: user.sales || [] } },
-          fields: userListFields
-        }).then(result => {
-          promiseDictionary['sales'] = result;
-        }),
-        this.productsRepository.find({
-          where: { and: [{ sellerId: user.id }, { sold: true }] },
-          fields: userListFields
-        }).then(result => {
-          promiseDictionary['listings'] = result;
-        }),
         this.userRepository.find({
           where: { id: { inq: user.followers || [] } },
           fields: userListFields
@@ -160,7 +148,9 @@ export class UserController {
     for (const key in promiseDictionary) {
       response[key] = promiseDictionary[key];
     }
-    return response as UserDetail;
+
+    const detailResponse = { ...response, sales: [], listings: [] } as UserDetail;
+    return detailResponse;
   }
 
   @patch('/users/{id}', {

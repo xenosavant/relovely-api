@@ -26,11 +26,12 @@ export class ProductController {
   constructor(
     @repository(ProductRepository)
     public productRepository: ProductRepository,
+    @repository(UserRepository)
     public userRepository: UserRepository,
   ) { }
 
 
-  @post('/products', {
+  @post('user/{id}/products', {
     responses: {
       '200': {
         description: 'Product model instance',
@@ -39,6 +40,7 @@ export class ProductController {
     },
   })
   async create(
+    @param.path.string('id') userId: typeof User.prototype.id,
     @requestBody({
       content: {
         'application/json': {
@@ -51,7 +53,7 @@ export class ProductController {
     })
     product: Omit<Product, 'id'>,
   ): Promise<Product> {
-    return this.productRepository.create(product);
+    return this.userRepository.products(userId).create(product)
   }
 
   @get('/products/count', {
