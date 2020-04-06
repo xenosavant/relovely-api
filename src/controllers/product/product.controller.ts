@@ -19,7 +19,7 @@ import {
 } from '@loopback/rest';
 import { Product, User } from '../../models';
 import { ProductRepository, UserRepository } from '../../repositories';
-import { ProductDetail } from './response/product-detail.interface';
+import { ProductDetail, productDetailFields } from './response/product-detail.interface';
 import { userListFields, UserList } from '../user/response/user-list.interface';
 
 export class ProductController {
@@ -29,32 +29,6 @@ export class ProductController {
     @repository(UserRepository)
     public userRepository: UserRepository,
   ) { }
-
-
-  @post('user/{id}/products', {
-    responses: {
-      '200': {
-        description: 'Product model instance',
-        content: { 'application/json': { schema: getModelSchemaRef(Product) } },
-      },
-    },
-  })
-  async create(
-    @param.path.string('id') userId: typeof User.prototype.id,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Product, {
-            title: 'NewProduct',
-            exclude: ['id'],
-          }),
-        },
-      },
-    })
-    product: Omit<Product, 'id'>,
-  ): Promise<Product> {
-    return this.userRepository.products(userId).create(product)
-  }
 
   @get('/products/count', {
     responses: {
@@ -129,10 +103,14 @@ export class ProductController {
     @param.path.string('id') id: string,
     @param.query.object('filter', getFilterSchemaFor(Product)) filter?: Filter<Product>
   ): Promise<ProductDetail> {
-    const product = await this.productRepository.findById(id) as any;
-    const user = await this.userRepository.findById(product.sellerId, { fields: userListFields }) as UserList;
+    const product = await this.productRepository.findById(id, {
+      fields: {
+        currentBid: false,
+        auctionEnd: false,
+        auctionStart: false
+      }, include: [{ relation: 'seller', scope: { fields: userListFields } }]
+    }) as any;
     const response = product as ProductDetail;
-    response.seller = user;
     return response;
   }
 

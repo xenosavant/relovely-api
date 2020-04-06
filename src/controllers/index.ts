@@ -6,3 +6,4 @@ export * from './auth/auth.controller';
 export * from './facebook/facebook.controller';
 export * from './storage/storage.controller';
 export * from './lookup/lookup.controller';
+export * from './user-product.controller';

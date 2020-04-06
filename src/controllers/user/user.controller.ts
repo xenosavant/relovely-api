@@ -17,13 +17,14 @@ import {
   del,
   requestBody
 } from '@loopback/rest';
-import { User, UserWithRelations } from '../../models';
+import { User, UserWithRelations, Product } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
 import { UserList, userListFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
 import { authenticate } from '@loopback/authentication';
 import { userDetailFields } from "../user/response/user-list.interface";
+import { productDetailFields } from '../product/response/product-detail.interface';
 
 export class UserController {
   constructor(
@@ -116,7 +117,11 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string
   ): Promise<UserDetail> {
-    const user: UserWithRelations = await this.userRepository.findById(id, { fields: userDetailFields, include: [{ relation: 'products' }] });
+    const user: UserWithRelations = await this.userRepository.findById(id,
+      {
+        fields: userDetailFields,
+        include: [{ relation: 'products', scope: { fields: productDetailFields } }]
+      });
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
     const promises: Promise<any>[] = []
@@ -149,7 +154,11 @@ export class UserController {
       response[key] = promiseDictionary[key];
     }
 
-    const detailResponse = { ...response, sales: [], listings: [] } as UserDetail;
+    response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
+    response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
+    delete response.products;
+
+    const detailResponse = { ...response } as UserDetail;
     return detailResponse;
   }
 

@@ -7,13 +7,19 @@ export interface UserList {
   type: string;
 }
 
-export const userListFields = {
-  id: true, username: true, firstName: true, lastName:
-    true, profileImageUrl: true
+export const userDetailFields = {
+  email: false, instagramUsername: false, passwordHash: false, instagramAuthToken:
+    false, instagramUserId: false, signedInWithInstagram: false, signedInWithFacebook: false,
+  facebookAuthToken: false, facebookUserId: false, emailVerificationCode: false,
+  passwordVerificationCode: false
 };
 
-export const userDetailFields = {
-  id: true, username: true, firstName: true, lastName:
-    true, profileImageUrl: true, followers: true, following: true,
-  sales: true, listings: true, favorites: true, type: true
+export const userListFields = {
+  ...userDetailFields,
+  email: false,
+  firstName: false,
+  lastName: false,
+  followers: false,
+  following: false,
+  favorites: false
 };

@@ -1,6 +1,8 @@
-import { Entity, model, property } from '@loopback/repository';
+import { Entity, model, property, belongsTo } from '@loopback/repository';
 import { VideoMetaData } from './video-meta-data.model';
 import { ImageSet } from './image-set';
+import { User, UserWithRelations } from './user.model';
+import { UserList } from '../controllers/user/response/user-list.interface';
 
 @model({ settings: { strict: true } })
 export class Product extends Entity {
@@ -11,12 +13,6 @@ export class Product extends Entity {
     generated: true,
   })
   id?: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  sellerId: string;
 
   @property({
     type: 'string',
@@ -55,10 +51,9 @@ export class Product extends Entity {
   currentBid?: number;
 
   @property.array(String, {
-    type: 'string',
     required: true,
   })
-  categoryIds: string[];
+  categories: string[];
 
   @property({
     type: 'string',
@@ -70,7 +65,13 @@ export class Product extends Entity {
     type: 'string',
     required: true,
   })
-  size: string;
+  size?: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  brand: string;
 
   @property({
     type: 'number',
@@ -90,9 +91,15 @@ export class Product extends Entity {
   })
   auction: boolean;
 
-  @property.array(String, {
-    type: 'string',
-    required: true,
-  })
-  tags: string[];
+  @property.array(String)
+  tags?: string[];
+
+  @belongsTo(() => User)
+  sellerId: string;
 }
+
+export interface ProductRelations {
+  seller: UserList;
+}
+
+export type ProductWithRelations = Product & ProductRelations;

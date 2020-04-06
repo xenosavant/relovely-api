@@ -1,6 +1,7 @@
-import { Entity, model, property } from '@loopback/repository';
+import { Entity, model, property, hasMany } from '@loopback/repository';
+import { Product } from './product.model';
 
-@model({ settings: { strict: true } })
+@model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
   @property({
     type: 'string',
@@ -20,7 +21,6 @@ export class User extends Entity {
     required: false,
   })
   username?: string;
-
 
   @property({
     type: 'string',
@@ -42,11 +42,6 @@ export class User extends Entity {
     type: 'string'
   })
   passwordHash?: string;
-
-  @property({
-    type: 'string'
-  })
-  passwordSalt?: string;
 
   @property({
     type: 'string'
@@ -135,6 +130,9 @@ export class User extends Entity {
     required: false,
   })
   favorites?: string[];
+
+  @hasMany(() => Product, { keyTo: 'sellerId' })
+  products: Product[];
 }
 
 export interface UserRelations {

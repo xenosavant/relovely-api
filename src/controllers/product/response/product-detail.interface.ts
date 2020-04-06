@@ -1,19 +1,24 @@
 import { UserList } from '../../user/response/user-list.interface';
+import { ImageSet } from '../../../models/image-set';
+import { VideoMetaData } from '../../../models/video-meta-data.model';
 
 export interface ProductDetail {
   id: string;
   title: string;
   seller: UserList;
-  imageUrls: string[];
-  videoUrls: string[];
+  images: ImageSet[];
+  videos: VideoMetaData[];
   description: string;
   auction: boolean;
-  auctionStart?: Date;
-  auctionEnd?: Date;
-  currentBid?: number;
   sizeId: string;
   size: string;
   price: number;
   sold: boolean;
   tags: string[];
+}
+
+export const productDetailFields = {
+  currentBid: false,
+  auctionEnd: false,
+  auctionStart: false
 }

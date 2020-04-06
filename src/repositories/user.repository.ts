@@ -1,16 +1,22 @@
-import {DefaultCrudRepository} from '@loopback/repository';
-import {User, UserRelations} from '../models';
+import {DefaultCrudRepository, repository, HasManyRepositoryFactory} from '@loopback/repository';
+import {User, UserRelations, Product} from '../models';
 import {DbDataSource} from '../datasources';
-import {inject} from '@loopback/core';
+import {inject, Getter} from '@loopback/core';
+import {ProductRepository} from './product.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
   typeof User.prototype.id,
   UserRelations
 > {
+
+  public readonly products: HasManyRepositoryFactory<Product, typeof User.prototype.id>;
+
   constructor(
-    @inject('datasources.db') dataSource: DbDataSource,
+    @inject('datasources.db') dataSource: DbDataSource, @repository.getter('ProductRepository') protected productRepositoryGetter: Getter<ProductRepository>,
   ) {
     super(User, dataSource);
+    this.products = this.createHasManyRepositoryFactoryFor('products', productRepositoryGetter,);
+    this.registerInclusionResolver('products', this.products.inclusionResolver);
   }
 }
