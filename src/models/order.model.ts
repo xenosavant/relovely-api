@@ -1,4 +1,8 @@
-import { Entity, model, property } from '@loopback/repository';
+import { Entity, model, property, belongsTo } from '@loopback/repository';
+import { User, Product, ProductWithRelations } from '.';
+import { UserList } from '../controllers/user/response/user-list.interface';
+import { UserWithRelations } from './user.model';
+import { Address } from 'cluster';
 
 @model({ settings: { strict: true } })
 export class Order extends Entity {
@@ -10,12 +14,14 @@ export class Order extends Entity {
   })
   id?: string;
 
-  @property({
-    type: 'string',
-    required: true,
-  })
+  @belongsTo(() => Product)
   productId: string;
 
+  @belongsTo(() => User, { name: 'seller' })
+  sellerId: string;
+
+  @belongsTo(() => User, { name: 'buyer' })
+  buyerId: string;
 
   @property({
     type: 'date',
@@ -23,26 +29,28 @@ export class Order extends Entity {
   })
   purchaseDate: Date;
 
+  @property({
+    required: true,
+  })
+  public address: Address;
 
   @property({
     type: 'string',
     required: true,
+  })
+  public status: 'ordered' | 'shipped' | 'unshipped' | 'cancelled' | 'delivered';
+
+  @property({
+    type: 'string',
+    required: false,
   })
   public shipDate?: Date;
 
-
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   public deliveryDate?: Date;
-
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  public status: 'shipped' | 'unshipped' | 'cancelled' | 'delivered';
 
   @property({
     type: 'string',
@@ -64,20 +72,27 @@ export class Order extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  public total: number;
+  public total?: number;
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  public shippingCost: number;
+  public shippingCost?: number;
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  public tax: number;
-
+  public tax?: number;
 }
+
+export interface OrderRelations {
+  product: ProductWithRelations;
+  buyer: UserWithRelations;
+  seller: UserWithRelations;
+}
+
+export type OrderWithRelations = Order & OrderRelations;

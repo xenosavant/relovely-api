@@ -12,4 +12,6 @@ export class VideoMetaData {
   publicId: string;
   @property()
   bytes: number;
+  @property()
+  format: string;
 }

@@ -67,6 +67,7 @@
     "jsonwebtoken": "^8.5.1",
     "loopback-connector-mongodb": "^5.2.3",
     "loopback-connector-rest": "^3.6.0",
+    "moment": "^2.24.0",
     "request-promise": "^4.2.5",
     "strong-error-handler": "^3.4.0",
     "tsc-watch": "^4.1.0"

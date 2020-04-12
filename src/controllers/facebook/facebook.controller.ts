@@ -66,7 +66,6 @@ export class FacebookController {
     const user = await this.userRepository.create({
       username: fbuser.name?.replace(' ', ''),
       type: 'member',
-      signedInWithInstagram: false,
       signedInWithFacebook: true,
       facebookAuthToken: longLivedToken.access_token,
       facebookUserId: fbuser.id

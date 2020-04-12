@@ -16,45 +16,71 @@ import {
   put,
   del,
   requestBody,
+  HttpErrors,
 } from '@loopback/rest';
-import {Order} from '../models';
-import {OrderRepository} from '../repositories';
+import { Order, User, Product } from '../models';
+import { OrderRepository, UserRepository, ProductRepository } from '../repositories';
+import { inject } from '@loopback/core';
+import { SecurityBindings } from '@loopback/security';
+import { AppUserProfile } from '../authentication/app-user-profile';
+import { authenticate } from '@loopback/authentication';
+import * as moment from 'moment'
 
+@authenticate('jwt')
 export class OrderController {
   constructor(
     @repository(OrderRepository)
-    public orderRepository : OrderRepository,
-  ) {}
+    public orderRepository: OrderRepository,
+    @repository(UserRepository)
+    public userRepository: UserRepository,
+    @repository(ProductRepository)
+    public productRepository: ProductRepository,
+    @inject(SecurityBindings.USER, { optional: true })
+    private user: AppUserProfile
+  ) { }
 
-  @post('/orders', {
+  @post('/products/{id}/orders', {
     responses: {
       '200': {
-        description: 'Order model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Order)}},
+        description: 'User model instance',
+        content: { 'application/json': { schema: getModelSchemaRef(Order) } },
       },
     },
   })
   async create(
+    @param.path.string('id') id: typeof Product.prototype.id,
     @requestBody({
       content: {
         'application/json': {
           schema: getModelSchemaRef(Order, {
-            title: 'NewOrder',
+            title: 'NewOrderInUser',
             exclude: ['id'],
+            optional: ['sellerId', 'buyerId', 'purchaseDate', 'shipDate', 'deliveryDate',
+              'total', 'status', 'shippingCost', 'tax']
           }),
         },
       },
-    })
-    order: Omit<Order, 'id'>,
+    }) order: Omit<Order, 'id'>,
   ): Promise<Order> {
-    return this.orderRepository.create(order);
+    const product = await this.productRepository.findById(id);
+    if (!product.sold) {
+      order.sellerId = product.sellerId;
+      order.buyerId = this.user.id as string;
+      order.purchaseDate = moment.utc().toDate();
+      order.status = 'ordered';
+      product.sold = true;
+      await this.productRepository.update(product);
+      return this.productRepository.order(id).create(order);
+    } else {
+      throw new HttpErrors.Conflict('This product is no longer available');
+    }
   }
 
   @get('/orders/count', {
     responses: {
       '200': {
         description: 'Order model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -72,7 +98,7 @@ export class OrderController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(Order, {includeRelations: true}),
+              items: getModelSchemaRef(Order, { includeRelations: true }),
             },
           },
         },
@@ -89,7 +115,7 @@ export class OrderController {
     responses: {
       '200': {
         description: 'Order PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -97,7 +123,7 @@ export class OrderController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Order, {partial: true}),
+          schema: getModelSchemaRef(Order, { partial: true }),
         },
       },
     })
@@ -113,7 +139,7 @@ export class OrderController {
         description: 'Order model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Order, {includeRelations: true}),
+            schema: getModelSchemaRef(Order, { includeRelations: true }),
           },
         },
       },
@@ -138,7 +164,7 @@ export class OrderController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Order, {partial: true}),
+          schema: getModelSchemaRef(Order, { partial: true }),
         },
       },
     })

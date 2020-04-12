@@ -71,7 +71,6 @@ export class AuthController {
       username: request.username,
       email: downcasedEmail,
       type: 'member',
-      signedInWithInstagram: false,
       signedInWithFacebook: false,
       passwordHash: hash,
       emailVerificationCode: verficationCodeString,

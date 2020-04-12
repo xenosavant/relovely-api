@@ -15,7 +15,8 @@ import {
   patch,
   put,
   del,
-  requestBody
+  requestBody,
+  HttpErrors
 } from '@loopback/rest';
 import { User, UserWithRelations, Product } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
@@ -25,21 +26,26 @@ import { Dictionary } from 'express-serve-static-core';
 import { authenticate } from '@loopback/authentication';
 import { userDetailFields } from "../user/response/user-list.interface";
 import { productDetailFields } from '../product/response/product-detail.interface';
+import { UserPreferences } from '../../models/user-preferences.model';
+import { inject } from '@loopback/core';
+import { SecurityBindings } from '@loopback/security';
+import { AppUserProfile } from '../../authentication/app-user-profile';
 
+@authenticate('jwt')
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
     @repository(ProductRepository)
     public productsRepository: ProductRepository,
+    @inject(SecurityBindings.USER, { optional: true })
+    private user: AppUserProfile
   ) { }
-
 
   productListFields = {
     id: true, title: true, seller: true, imageUrls: true, videoUrls: true, auction: true,
     auctionStart: true, auctionEnd: true, currentBid: true, sizeId: true, size: true, price: true, sold: true
   }
-
 
   @post('/users', {
     responses: {
@@ -162,10 +168,10 @@ export class UserController {
     return detailResponse;
   }
 
-  @patch('/users/{id}', {
+  @patch('/users/{id}/preferences', {
     responses: {
       '204': {
-        description: 'User PATCH success',
+        description: 'successful update',
       },
     },
   })
@@ -174,13 +180,16 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, { partial: true }),
+          schema: getModelSchemaRef(UserPreferences, { partial: true }),
         },
       },
     })
-    user: User,
+    preferences: UserPreferences,
   ): Promise<void> {
-    await this.userRepository.updateById(id, user);
+    if (this.user.id !== id) {
+      throw new HttpErrors.Forbidden();
+    }
+    await this.userRepository.updateById(id, { preferences: preferences });
   }
 
   @put('/users/{id}', {

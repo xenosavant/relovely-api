@@ -1,5 +1,7 @@
 import { Entity, model, property, hasMany } from '@loopback/repository';
-import { Product } from './product.model';
+import { Product, ProductWithRelations } from './product.model';
+import { Order } from './order.model';
+import { UserPreferences } from './user-preferences.model';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
@@ -54,21 +56,15 @@ export class User extends Entity {
   instagramUserId?: string;
 
   @property({
-    type: 'string',
-    required: true
-  })
-  signedInWithInstagram: boolean;
-
-  @property({
     type: 'string'
   })
   facebookAuthToken?: string;
 
   @property({
-    type: 'string',
+    type: 'boolean',
     required: true
   })
-  signedInWithFacebook: boolean;
+  signedInWithFacebook?: boolean;
 
   @property({
     type: 'string'
@@ -91,7 +87,7 @@ export class User extends Entity {
   passwordVerificationCode?: string;
 
   @property({
-    type: 'string'
+    type: 'boolean'
   })
   emailVerified?: boolean;
 
@@ -117,26 +113,23 @@ export class User extends Entity {
     type: 'string',
     required: false,
   })
-  sales?: string[];
-
-  @property.array(String, {
-    type: 'string',
-    required: false,
-  })
-  listings?: string[];
-
-  @property.array(String, {
-    type: 'string',
-    required: false,
-  })
   favorites?: string[];
+
+  @property(UserPreferences)
+  preferences: UserPreferences;
 
   @hasMany(() => Product, { keyTo: 'sellerId' })
   products: Product[];
+
+  @hasMany(() => Order, { keyTo: 'buyerId' })
+  purchases: Order[];
+
+  @hasMany(() => Order, { keyTo: 'sellerId' })
+  sales: Order[];
 }
 
 export interface UserRelations {
-  // describe navigational properties here
+
 }
 
 export type UserWithRelations = User & UserRelations;

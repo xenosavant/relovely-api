@@ -1,8 +1,9 @@
-import { Entity, model, property, belongsTo } from '@loopback/repository';
+import { Entity, model, property, belongsTo, hasOne } from '@loopback/repository';
 import { VideoMetaData } from './video-meta-data.model';
 import { ImageSet } from './image-set';
 import { User, UserWithRelations } from './user.model';
 import { UserList } from '../controllers/user/response/user-list.interface';
+import { Order } from './order.model';
 
 @model({ settings: { strict: true } })
 export class Product extends Entity {
@@ -10,7 +11,7 @@ export class Product extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: true,
+    generated: false,
   })
   id?: string;
 
@@ -63,7 +64,7 @@ export class Product extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   size?: string;
 
@@ -96,10 +97,13 @@ export class Product extends Entity {
 
   @belongsTo(() => User)
   sellerId: string;
+
+  @hasOne(() => Order)
+  order: Order;
 }
 
 export interface ProductRelations {
-  seller: UserList;
+  seller: UserWithRelations;
 }
 
 export type ProductWithRelations = Product & ProductRelations;

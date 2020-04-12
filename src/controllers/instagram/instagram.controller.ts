@@ -62,7 +62,6 @@ export class InstagramController {
       username: data.username,
       profileImageUrl: profile.graphql.user.profile_pic_url_hd,
       type: 'member',
-      signedInWithInstagram: true,
       signedInWithFacebook: false,
       instagramAuthToken: longLivedToken.access_token,
       instagramUsername: data.username,

@@ -65,6 +65,30 @@ export class ProductController {
     return this.productRepository.find(filter);
   }
 
+  @post('/users/{id}/products', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: { 'application/json': { schema: getModelSchemaRef(Product) } },
+      },
+    },
+  })
+  async create(
+    @param.path.string('id') id: typeof User.prototype.id,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Product, {
+            title: 'NewProductInUser',
+            optional: ['sellerId', 'size', 'sizeId']
+          }),
+        },
+      },
+    }) product: Omit<Product, 'id'>,
+  ): Promise<Product> {
+    return this.userRepository.products(id).create(product);
+  }
+
   @patch('/products', {
     responses: {
       '200': {
@@ -104,11 +128,7 @@ export class ProductController {
     @param.query.object('filter', getFilterSchemaFor(Product)) filter?: Filter<Product>
   ): Promise<ProductDetail> {
     const product = await this.productRepository.findById(id, {
-      fields: {
-        currentBid: false,
-        auctionEnd: false,
-        auctionStart: false
-      }, include: [{ relation: 'seller', scope: { fields: userListFields } }]
+      fields: productDetailFields, include: [{ relation: 'seller', scope: { fields: userListFields } }]
     }) as any;
     const response = product as ProductDetail;
     return response;
