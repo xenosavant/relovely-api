@@ -2,6 +2,8 @@ import { model, property } from '@loopback/repository';
 
 @model()
 export class PriceRange {
+  @property(String)
+  id: string;
   @property(Number)
   min?: number;
   @property(Number)

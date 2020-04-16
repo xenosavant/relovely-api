@@ -30,6 +30,7 @@ import { UserPreferences } from '../../models/user-preferences.model';
 import { inject } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
+import { userUpdateFields } from './user-update-fields';
 
 @authenticate('jwt')
 export class UserController {
@@ -168,7 +169,7 @@ export class UserController {
     return detailResponse;
   }
 
-  @patch('/users/{id}/preferences', {
+  @patch('/users/{id}', {
     responses: {
       '204': {
         description: 'successful update',
@@ -180,16 +181,21 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(UserPreferences, { partial: true }),
+          schema: getModelSchemaRef(User, { partial: true }),
         },
       },
     })
-    preferences: UserPreferences,
+    updates: Partial<User>,
   ): Promise<void> {
     if (this.user.id !== id) {
       throw new HttpErrors.Forbidden();
     }
-    await this.userRepository.updateById(id, { preferences: preferences });
+    Object.keys(updates).forEach(key => {
+      if (!userUpdateFields.includes(key)) {
+        throw new HttpErrors.Forbidden();
+      }
+    })
+    await this.userRepository.updateById(id, updates);
   }
 
   @put('/users/{id}', {

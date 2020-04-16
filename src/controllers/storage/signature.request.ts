@@ -6,4 +6,6 @@ export class SignatureRequest {
   folder: string;
   @property()
   timestamp: string;
+  @property()
+  publicId?: string;
 }

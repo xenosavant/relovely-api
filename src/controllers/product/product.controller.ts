@@ -27,7 +27,7 @@ export class ProductController {
     @repository(ProductRepository)
     public productRepository: ProductRepository,
     @repository(UserRepository)
-    public userRepository: UserRepository,
+    public userRepository: UserRepository
   ) { }
 
   @get('/products/count', {
