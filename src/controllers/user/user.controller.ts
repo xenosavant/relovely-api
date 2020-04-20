@@ -80,14 +80,13 @@ export class UserController {
       },
     },
   })
-  @authenticate('jwt')
   async count(
     @param.query.object('where', getWhereSchemaFor(User)) where?: Where<User>,
   ): Promise<Count> {
     return this.userRepository.count(where);
   }
 
-  @get('/users', {
+  @get('/users/me', {
     responses: {
       '200': {
         description: 'Array of User model instances',
@@ -104,8 +103,8 @@ export class UserController {
   })
   async find(
     @param.query.object('filter', getFilterSchemaFor(User)) filter?: Filter<User>,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter);
+  ): Promise<User> {
+    return this.userRepository.findById(this.user.id as string, { fields: userDetailFields });
   }
 
 

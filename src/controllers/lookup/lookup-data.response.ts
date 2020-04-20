@@ -7,4 +7,8 @@ export class LookupDataResponse {
   categories: Lookup;
   @property()
   sizes: Lookup;
+  @property()
+  colors: Lookup;
+  @property()
+  prices: Lookup;
 }

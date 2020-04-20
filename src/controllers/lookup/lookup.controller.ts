@@ -50,7 +50,9 @@ export class LookupController {
   async signup(): Promise<LookupDataResponse> {
     return {
       categories: (await this.lookupRepository.findOne({ where: { key: 'categories' } }) as Lookup),
-      sizes: (await this.lookupRepository.findOne({ where: { key: 'sizes' } }) as Lookup)
+      sizes: (await this.lookupRepository.findOne({ where: { key: 'sizes' } }) as Lookup),
+      colors: (await this.lookupRepository.findOne({ where: { key: 'colors' } }) as Lookup),
+      prices: (await this.lookupRepository.findOne({ where: { key: 'prices' } }) as Lookup)
     }
   }
 }

@@ -4,6 +4,7 @@ import {
   Filter,
   repository,
   Where,
+  PredicateComparison,
 } from '@loopback/repository';
 import {
   post,
@@ -17,10 +18,12 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import { Product, User } from '../../models';
+import { Product, User, ProductWithRelations } from '../../models';
 import { ProductRepository, UserRepository } from '../../repositories';
 import { ProductDetail, productDetailFields } from './response/product-detail.interface';
 import { userListFields, UserList } from '../user/response/user-list.interface';
+import { ListResponse } from '../list-response';
+import { PriceFilter } from './request/price-filter';
 
 export class ProductController {
   constructor(
@@ -60,9 +63,67 @@ export class ProductController {
     },
   })
   async find(
-    @param.query.object('filter', getFilterSchemaFor(Product)) filter?: Filter<Product>,
-  ): Promise<Product[]> {
-    return this.productRepository.find(filter);
+    @param.query.string('category') category: string,
+    @param.query.string('sizes') sizes?: string,
+    @param.query.string('colors') colors?: string,
+    @param.query.string('prices') prices?: string,
+  ): Promise<ListResponse<ProductWithRelations>> {
+    const where: Where<Product> = {
+      and: [
+        { categories: { regexp: `^${category}$` } }
+      ]
+    };
+
+    let priceArray;
+    if (prices) {
+      priceArray = JSON.parse(prices) as PriceFilter[];
+      if (priceArray.length) {
+        const orQuery: any = { or: [] };
+        priceArray?.forEach(filter => {
+          if (!filter.min && filter.min !== 0) {
+            orQuery.or.push({ price: { lte: filter.max } });
+          } else if (!filter.max && filter.max !== 0) {
+            orQuery.or.push({ price: { gte: filter.min } });
+          } else {
+            orQuery.or.push({
+              and:
+                [
+                  { price: { gte: filter.min } },
+                  { price: { lte: filter.max } },
+                ]
+            });
+          }
+        });
+        where.and.push(orQuery);
+      }
+    }
+
+    if (sizes) {
+      let parsed = sizes.split(',');
+      const and: any = { or: [] };
+      parsed.forEach(size => {
+        and.or.push({ sizeId: size });
+      })
+      where.and.push(and);
+    }
+
+    if (colors) {
+      let parsed = colors.split(',');
+      const and: any = { or: [] };
+      parsed.forEach(color => {
+        and.or.push({ colorId: color });
+      })
+      where.and.push(and);
+    }
+
+    const products = await this.productRepository.find({
+      where: where,
+      include: [{ relation: 'seller', scope: { fields: userListFields } }]
+    });
+    return {
+      count: products.length,
+      items: products
+    }
   }
 
   @post('/users/{id}/products', {
@@ -80,12 +141,14 @@ export class ProductController {
         'application/json': {
           schema: getModelSchemaRef(Product, {
             title: 'NewProductInUser',
-            optional: ['sellerId', 'size', 'sizeId']
+            optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction']
           }),
         },
       },
     }) product: Omit<Product, 'id'>,
   ): Promise<Product> {
+    product.sold = false;
+    product.auction = false;
     return this.userRepository.products(id).create(product);
   }
 
@@ -125,7 +188,6 @@ export class ProductController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.query.object('filter', getFilterSchemaFor(Product)) filter?: Filter<Product>
   ): Promise<ProductDetail> {
     const product = await this.productRepository.findById(id, {
       fields: productDetailFields, include: [{ relation: 'seller', scope: { fields: userListFields } }]

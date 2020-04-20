@@ -15,11 +15,7 @@ export const userDetailFields = {
 };
 
 export const userListFields = {
-  ...userDetailFields,
-  email: false,
-  firstName: false,
-  lastName: false,
-  followers: false,
-  following: false,
-  favorites: false
+  username: true,
+  profileImageUrl: true,
+  id: true
 };

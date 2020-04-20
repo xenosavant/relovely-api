@@ -90,9 +90,9 @@ export class Order extends Entity {
 }
 
 export interface OrderRelations {
-  product: ProductWithRelations;
-  buyer: UserWithRelations;
-  seller: UserWithRelations;
+  product?: ProductWithRelations;
+  buyer?: UserWithRelations;
+  seller?: UserWithRelations;
 }
 
 export type OrderWithRelations = Order & OrderRelations;

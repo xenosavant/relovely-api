@@ -25,6 +25,8 @@ import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../authentication/app-user-profile';
 import { authenticate } from '@loopback/authentication';
 import * as moment from 'moment'
+import { userListFields } from './user/response/user-list.interface';
+import { ListResponse } from './list-response';
 
 @authenticate('jwt')
 export class OrderController {
@@ -76,20 +78,6 @@ export class OrderController {
     }
   }
 
-  @get('/orders/count', {
-    responses: {
-      '200': {
-        description: 'Order model count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async count(
-    @param.query.object('where', getWhereSchemaFor(Order)) where?: Where<Order>,
-  ): Promise<Count> {
-    return this.orderRepository.count(where);
-  }
-
   @get('/orders', {
     responses: {
       '200': {
@@ -106,9 +94,30 @@ export class OrderController {
     },
   })
   async find(
-    @param.query.object('filter', getFilterSchemaFor(Order)) filter?: Filter<Order>,
-  ): Promise<Order[]> {
-    return this.orderRepository.find(filter);
+    @param.query.boolean('sales') sales?: boolean
+  ): Promise<ListResponse<Order>> {
+    const currentUser = await this.userRepository.findById(this.user.id);
+    const include = [{ relation: 'product' },
+    { relation: 'buyer', scope: { fields: userListFields } },
+    { relation: 'seller', scope: { fields: userListFields } }];
+    let where = {};
+    let relation: string;
+    include.push();
+    let list = [];
+    if (currentUser.type === 'seller') {
+      if (sales) {
+        where = { sellerId: currentUser.id };
+      } else {
+        where = { buyerId: currentUser.id };
+      }
+    } else {
+      where = { buyerId: currentUser.id };
+    }
+    list = await this.orderRepository.find({ where: where, include: include });
+    return {
+      count: list.length,
+      items: list
+    }
   }
 
   @patch('/orders', {
@@ -147,9 +156,12 @@ export class OrderController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.query.object('filter', getFilterSchemaFor(Order)) filter?: Filter<Order>
   ): Promise<Order> {
-    return this.orderRepository.findById(id, filter);
+    return this.orderRepository.findById(id, {
+      include: [{ relation: 'buyer', scope: { fields: userListFields } },
+      { relation: 'seller', scope: { fields: userListFields } },
+      { relation: 'product' }]
+    });
   }
 
   @patch('/orders/{id}', {

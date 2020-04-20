@@ -70,6 +70,12 @@ export class Product extends Entity {
 
   @property({
     type: 'string',
+    required: false,
+  })
+  colorId?: string;
+
+  @property({
+    type: 'string',
     required: true,
   })
   brand: string;
@@ -79,6 +85,12 @@ export class Product extends Entity {
     required: true,
   })
   price: number;
+
+  @property({
+    type: 'number',
+    required: false,
+  })
+  retailPrice?: number;
 
   @property({
     type: 'boolean',
