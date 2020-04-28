@@ -74,13 +74,15 @@ export class AuthController {
       signedInWithFacebook: false,
       passwordHash: hash,
       emailVerificationCode: verficationCodeString,
-      emailVerified: false
+      emailVerified: false,
+      favorites: [],
+      followers: [],
+      following: []
     });
 
     await this.sendGridService.sendEmail(request.email,
       'Welcome To Relovely!',
       `Click <a href="https://192.34.56.220/account/verify?type=email&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
-
   }
 
   @post('auth/signin', {

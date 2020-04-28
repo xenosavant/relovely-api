@@ -11,9 +11,15 @@ export class Product extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
+    generated: true
   })
   id?: string;
+
+  @property({
+    type: 'boolean',
+    required: false,
+  })
+  active?: boolean;
 
   @property({
     type: 'string',
@@ -103,6 +109,12 @@ export class Product extends Entity {
     required: true,
   })
   auction: boolean;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  cloudId: string;
 
   @property.array(String)
   tags?: string[];

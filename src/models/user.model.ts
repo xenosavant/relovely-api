@@ -101,19 +101,19 @@ export class User extends Entity {
     type: 'string',
     required: false,
   })
-  followers?: string[];
+  followers: string[];
 
   @property.array(String, {
     type: 'string',
     required: false,
   })
-  following?: string[];
+  following: string[];
 
   @property.array(String, {
     type: 'string',
     required: false,
   })
-  favorites?: string[];
+  favorites: string[];
 
   @property(UserPreferences)
   preferences: UserPreferences;

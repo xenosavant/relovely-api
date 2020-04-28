@@ -17,6 +17,7 @@ import {
   put,
   del,
   requestBody,
+  HttpErrors,
 } from '@loopback/rest';
 import { Product, User, ProductWithRelations } from '../../models';
 import { ProductRepository, UserRepository } from '../../repositories';
@@ -24,13 +25,19 @@ import { ProductDetail, productDetailFields } from './response/product-detail.in
 import { userListFields, UserList } from '../user/response/user-list.interface';
 import { ListResponse } from '../list-response';
 import { PriceFilter } from './request/price-filter';
+import { authenticate } from '@loopback/authentication';
+import { SecurityBindings } from '@loopback/security';
+import { inject } from '@loopback/core';
+import { AppUserProfile } from '../../authentication/app-user-profile';
 
 export class ProductController {
   constructor(
     @repository(ProductRepository)
     public productRepository: ProductRepository,
     @repository(UserRepository)
-    public userRepository: UserRepository
+    public userRepository: UserRepository,
+    @inject(SecurityBindings.USER, { optional: true })
+    private user: AppUserProfile
   ) { }
 
   @get('/products/count', {
@@ -70,6 +77,8 @@ export class ProductController {
   ): Promise<ListResponse<ProductWithRelations>> {
     const where: Where<Product> = {
       and: [
+        { sold: false },
+        { active: true },
         { categories: { regexp: `^${category}$` } }
       ]
     };
@@ -126,6 +135,42 @@ export class ProductController {
     }
   }
 
+  @authenticate('jwt')
+  @get('/products/favorites', {
+    responses: {
+      '200': {
+        description: 'Array of Product model instances',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: getModelSchemaRef(Product, { includeRelations: true }),
+            },
+          },
+        },
+      },
+    },
+  })
+  async favorites(
+  ): Promise<ListResponse<ProductWithRelations>> {
+    const me = await this.userRepository.findById(this.user.id, { fields: { favorites: true } });
+    const products = await this.productRepository.find({
+      where: {
+        and: [
+          { id: { inq: me.favorites } },
+          { active: true }
+        ]
+      },
+      include: [{ relation: 'seller', scope: { fields: userListFields } }]
+    });
+    return {
+      count: products.length,
+      items: products
+    }
+
+  }
+
+  @authenticate('jwt')
   @post('/users/{id}/products', {
     responses: {
       '200': {
@@ -147,31 +192,13 @@ export class ProductController {
       },
     }) product: Omit<Product, 'id'>,
   ): Promise<Product> {
+    if (this.user.id !== id) {
+      throw new HttpErrors.Forbidden;
+    }
+    product.active = true;
     product.sold = false;
     product.auction = false;
     return this.userRepository.products(id).create(product);
-  }
-
-  @patch('/products', {
-    responses: {
-      '200': {
-        description: 'Product PATCH success count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Product, { partial: true }),
-        },
-      },
-    })
-    product: Product,
-    @param.query.object('where', getWhereSchemaFor(Product)) where?: Where<Product>,
-  ): Promise<Count> {
-    return this.productRepository.updateAll(product, where);
   }
 
   @get('/products/{id}', {
@@ -196,6 +223,7 @@ export class ProductController {
     return response;
   }
 
+  @authenticate('jwt')
   @patch('/products/{id}', {
     responses: {
       '204': {
@@ -214,6 +242,10 @@ export class ProductController {
     })
     product: Product,
   ): Promise<void> {
+    const oldProduct = await this.productRepository.findById(id);
+    if (this.user.id !== oldProduct.sellerId.toString()) {
+      throw new HttpErrors.Forbidden;
+    }
     await this.productRepository.updateById(id, product);
   }
 
