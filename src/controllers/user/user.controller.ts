@@ -185,7 +185,7 @@ export class UserController {
       },
     })
     updates: Partial<User>,
-  ): Promise<void> {
+  ): Promise<User> {
     if (this.user.id !== id) {
       throw new HttpErrors.Forbidden();
     }
@@ -195,6 +195,7 @@ export class UserController {
       }
     })
     await this.userRepository.updateById(id, updates);
+    return await this.userRepository.findById(id, { fields: userDetailFields });
   }
 
   @put('/users/{id}', {

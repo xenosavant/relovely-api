@@ -2,6 +2,7 @@ import { Entity, model, property, hasMany } from '@loopback/repository';
 import { Product, ProductWithRelations } from './product.model';
 import { Order } from './order.model';
 import { UserPreferences } from './user-preferences.model';
+import { Address } from './address.model';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
@@ -93,27 +94,29 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: true
   })
   type: string;
 
   @property.array(String, {
-    type: 'string',
-    required: false,
+    required: false
   })
   followers: string[];
 
   @property.array(String, {
-    type: 'string',
-    required: false,
+    required: false
   })
   following: string[];
 
   @property.array(String, {
-    type: 'string',
-    required: false,
+    required: false
   })
   favorites: string[];
+
+  @property.array(Address, {
+    required: false
+  })
+  addresses: Address[];
 
   @property(UserPreferences)
   preferences: UserPreferences;

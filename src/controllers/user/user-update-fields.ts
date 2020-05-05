@@ -1,1 +1,1 @@
-export const userUpdateFields: string[] = ['profileImageUrl', 'preferences'];
+export const userUpdateFields: string[] = ['profileImageUrl', 'preferences', 'addresses'];
