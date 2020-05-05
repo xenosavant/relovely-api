@@ -81,11 +81,9 @@ export class AuthController {
       addresses: []
     });
 
-    return process.env.SENDGRID_API_KEY as string;
-
-    // await this.sendGridService.sendEmail(request.email,
-    //   'Welcome To Relovely!',
-    //   `Click <a href="dev.relovely.com/account/verify?type=email&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
+    await this.sendGridService.sendEmail(request.email,
+      'Welcome To Relovely!',
+      `Click <a href="dev.relovely.com/account/verify?type=email&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
   }
 
   @post('auth/signin', {
