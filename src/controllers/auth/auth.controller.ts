@@ -64,8 +64,10 @@ export class AuthController {
     }
 
     const hash = await this.credentialService.hashPassword(request.password);
-    const verificationCode = crypto.createHash('sha256'),
-      verficationCodeString = verificationCode.digest('base64');
+    const rand = Math.random().toString();
+    const now = new Date();
+    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+      verficationCodeString = verificationCode.digest('hex');
 
     const user = await this.userRepository.create({
       username: request.username,
@@ -200,8 +202,10 @@ export class AuthController {
       throw new HttpErrors.Forbidden();
     }
 
-    const verificationCode = crypto.createHash('sha256'),
-      verficationCodeString = verificationCode.digest('base64');
+    const rand = Math.random().toString();
+    const now = new Date();
+    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+      verficationCodeString = verificationCode.digest('hex');
 
     user.passwordVerificationCode = verficationCodeString;
     await this.userRepository.save(user);
