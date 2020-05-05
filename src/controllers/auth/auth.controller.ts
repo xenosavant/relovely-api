@@ -47,7 +47,7 @@ export class AuthController {
       },
     })
     request: AuthRequest
-  ): Promise<string> {
+  ): Promise<void> {
 
     const downcasedEmail = request.email.toLowerCase();
 
