@@ -15,6 +15,8 @@ export class ProductRepository extends DefaultCrudRepository<
 
   public readonly order: HasOneRepositoryFactory<Order, typeof Product.prototype.id>;
 
+  public readonly dataSource: DbDataSource;
+
   constructor(
     @inject('datasources.db') dataSource: DbDataSource,
     @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
@@ -25,5 +27,6 @@ export class ProductRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('order', this.order.inclusionResolver);
     this.seller = this.createBelongsToAccessorFor('seller', userRepositoryGetter);
     this.registerInclusionResolver('seller', this.seller.inclusionResolver);
+    this.dataSource = dataSource;
   }
 }

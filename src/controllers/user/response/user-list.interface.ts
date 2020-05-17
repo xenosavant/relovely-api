@@ -17,5 +17,6 @@ export const userDetailFields = {
 export const userListFields = {
   username: true,
   profileImageUrl: true,
-  id: true
+  id: true,
+  type: true
 };

@@ -8,7 +8,7 @@ import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { TokenService } from "@loopback/authentication";
 import { AppCredentialService } from "../../services/authentication/credential.service";
 import { AppUserProfile } from "../../authentication/app-user-profile";
-import { SendgridService } from "../../services";
+import { SendgridService, InstagramService } from "../../services";
 import * as crypto from 'crypto'
 import { SignupResponse } from "./signup-response";
 import { VerifyEmailRequest } from "./verify-email.request";
@@ -29,6 +29,8 @@ export class AuthController {
     public tokenService: TokenService,
     @service(SendgridService)
     public sendGridService: SendgridService,
+    @service(InstagramService)
+    public instagramService: InstagramService
   ) { }
 
   @post('auth/signup', {
@@ -61,6 +63,11 @@ export class AuthController {
 
     if (existingUsername) {
       throw new HttpErrors.Conflict('Username already exists');
+    }
+
+    const instaUser = await this.instagramService.getUserProfile(request.username);
+    if (instaUser) {
+      throw new HttpErrors.Conflict('Username already exists on Instagram');
     }
 
     const hash = await this.credentialService.hashPassword(request.password);

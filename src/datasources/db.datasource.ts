@@ -22,7 +22,8 @@ export class DbDataSource extends juggler.DataSource
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      useNewUrlParser: true
+      useNewUrlParser: true,
+      allowExtendedOperators: true
     },
   ) {
     super(dsConfig);

@@ -67,7 +67,13 @@ export class InstagramService {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}/?__a=1`
     }
-    const response = JSON.parse(await client(options));
-    return response;
+    let response;
+    try {
+      response = await client(options);
+    } catch (err) {
+      response = null;
+    }
+
+    return response ? JSON.parse(response) : response;
   }
 }

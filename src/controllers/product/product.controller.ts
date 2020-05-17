@@ -249,6 +249,25 @@ export class ProductController {
     await this.productRepository.updateById(id, product);
   }
 
+  @authenticate('jwt')
+  @patch('/products/{id}/favorite', {
+    responses: {
+      '200': {
+        description: 'Product PATCH success',
+      },
+    },
+  })
+  async favorite(
+    @param.path.string('id') id: string
+  ): Promise<void> {
+    const user = await this.userRepository.findById(this.user.id, { fields: { favorites: true } });
+    if (!user.favorites.includes(id)) {
+      await this.userRepository.updateById(this.user.id, { $push: { favorites: id } } as any);
+    } else {
+      await this.userRepository.updateById(this.user.id, { $pull: { favorites: id } } as any);
+    }
+  }
+
   @put('/products/{id}', {
     responses: {
       '204': {
@@ -261,16 +280,5 @@ export class ProductController {
     @requestBody() product: Product,
   ): Promise<void> {
     await this.productRepository.replaceById(id, product);
-  }
-
-  @del('/products/{id}', {
-    responses: {
-      '204': {
-        description: 'Product DELETE success',
-      },
-    },
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.productRepository.deleteById(id);
   }
 }
