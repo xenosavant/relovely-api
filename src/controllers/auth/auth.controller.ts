@@ -14,6 +14,7 @@ import { SignupResponse } from "./signup-response";
 import { VerifyEmailRequest } from "./verify-email.request";
 import { ResetPasswordRequest } from "./reset-password-request";
 import { PasswordEmailRequest } from "./password-email-request";
+import { StripeService } from '../../services/stripe/stripe.service';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -30,7 +31,9 @@ export class AuthController {
     @service(SendgridService)
     public sendGridService: SendgridService,
     @service(InstagramService)
-    public instagramService: InstagramService
+    public instagramService: InstagramService,
+    @service(StripeService)
+    public stripeService: StripeService
   ) { }
 
   @post('auth/signup', {
@@ -76,6 +79,8 @@ export class AuthController {
     const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
       verficationCodeString = verificationCode.digest('hex');
 
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+
     const user = await this.userRepository.create({
       username: request.username,
       email: downcasedEmail,
@@ -87,7 +92,9 @@ export class AuthController {
       favorites: [],
       followers: [],
       following: [],
-      addresses: []
+      addresses: [],
+      creditCards: [],
+      stripeId: stripeId
     });
 
     await this.sendGridService.sendEmail(request.email,

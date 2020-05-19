@@ -3,6 +3,7 @@ import { Product, ProductWithRelations } from './product.model';
 import { Order } from './order.model';
 import { UserPreferences } from './user-preferences.model';
 import { Address } from './address.model';
+import { CreditCard } from './credit-card.model';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
@@ -15,9 +16,9 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
   })
-  email?: string;
+  email: string;
 
   @property({
     type: 'string',
@@ -75,6 +76,11 @@ export class User extends Entity {
   @property({
     type: 'string'
   })
+  stripeId?: string;
+
+  @property({
+    type: 'string'
+  })
   profileImageUrl?: string;
 
   @property({
@@ -117,6 +123,11 @@ export class User extends Entity {
     required: false
   })
   addresses: Address[];
+
+  @property.array(Address, {
+    required: false
+  })
+  creditCards: CreditCard[];
 
   @property(UserPreferences)
   preferences: UserPreferences;

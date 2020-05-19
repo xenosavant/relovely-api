@@ -1,8 +1,8 @@
 import { bind, /* inject, */ BindingScope } from '@loopback/core';
 import Stripe from 'stripe';
-import { SellerAccountRequest } from '../../controllers/user/request/signup-request.interface';
 import { request } from 'http';
 import { BankAccountRequest } from '../../controllers/user/request/bank-account.request.interface';
+import { SellerAccountRequest } from '../../controllers/user/request/seller-account-request.interface';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2020-03-02',
   typescript: true
@@ -67,13 +67,13 @@ export class StripeService {
     return response.id;
   }
 
-  async chargeCustomer(sellerAccountId: string, amount: number, paymentMethodId: string) {
+  async chargeCustomer(sellerAccountId: string, amount: number, CreditCardId: string) {
     stripe.paymentIntents.create({
       transfer_data: {
         destination: sellerAccountId
       },
       amount: amount,
-      payment_method: paymentMethodId,
+      payment_method: CreditCardId,
       currency: 'USD'
     })
   }

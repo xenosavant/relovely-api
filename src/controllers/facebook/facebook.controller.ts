@@ -13,6 +13,7 @@ import { SecurityBindings } from '@loopback/security';
 import { User } from "../../models";
 import { CloudinaryService } from "../../services";
 import * as fs from 'fs';
+import { StripeService } from '../../services/stripe/stripe.service';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -30,7 +31,9 @@ export class FacebookController {
     public credentialService: AppCredentialService,
     @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile,
     @service(CloudinaryService)
-    public cloudinaryService: CloudinaryService) { }
+    public cloudinaryService: CloudinaryService,
+    @service(StripeService)
+    public stripeService: StripeService) { }
 
   @post('/facebook/signup', {
     responses: {
@@ -63,12 +66,20 @@ export class FacebookController {
     if (existingFacebookUser) {
       return { error: 'This facebook account is already linked with an existing user' };
     }
+
+    const stripeId = await this.stripeService.createCustomer(fbuser.email);
+
     const user = await this.userRepository.create({
       username: fbuser.name?.replace(' ', ''),
+      email: fbuser.email,
       type: 'member',
       signedInWithFacebook: true,
       facebookAuthToken: longLivedToken.access_token,
-      facebookUserId: fbuser.id
+      facebookUserId: fbuser.id,
+      favorites: [],
+      following: [],
+      addresses: [],
+      creditCards: []
     });
 
     const prefix = 'data:image/jpeg;base64,';

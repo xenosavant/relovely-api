@@ -41,7 +41,7 @@ export class FacebookService {
   public async getBasicUserData(token: string): Promise<FacebookUser> {
     const options = {
       method: 'GET',
-      uri: `${this.graphUrl}/me?access_token=${token}&fields=id,name`,
+      uri: `${this.graphUrl}/me?access_token=${token}&fields=id,name,email`,
       headers: { 'Content-Type': 'application/json' }
     }
     const response = JSON.parse(await client(options));
