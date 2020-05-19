@@ -67,11 +67,10 @@ export class FacebookController {
       return { error: 'This facebook account is already linked with an existing user' };
     }
 
-    const stripeId = await this.stripeService.createCustomer(fbuser.email);
+    // const stripeId = await this.stripeService.createCustomer(fbuser.email);
 
     const user = await this.userRepository.create({
       username: fbuser.name?.replace(' ', ''),
-      email: fbuser.email,
       type: 'member',
       signedInWithFacebook: true,
       facebookAuthToken: longLivedToken.access_token,
