@@ -69,7 +69,12 @@ export class UserController {
   async find(
     @param.query.object('filter', getFilterSchemaFor(User)) filter?: Filter<User>,
   ): Promise<User> {
-    return this.userRepository.findById(this.user.id as string, { fields: userDetailFields });
+    const user = await this.userRepository.findById(this.user.id as string, { fields: userDetailFields });
+    if (!user) {
+      throw new HttpErrors.Unauthorized;
+    } else {
+      return user;
+    }
   }
 
 
