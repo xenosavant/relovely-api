@@ -71,7 +71,7 @@ export class FacebookController {
 
     const user = await this.userRepository.create({
       username: fbuser.name?.replace(' ', ''),
-      stripeId: stripeId,
+      stripeCustomerId: stripeId,
       email: fbuser.email,
       type: 'member',
       signedInWithFacebook: true,

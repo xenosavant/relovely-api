@@ -94,7 +94,7 @@ export class AuthController {
       following: [],
       addresses: [],
       creditCards: [],
-      stripeId: stripeId
+      stripeCustomerId: stripeId
     });
 
     await this.sendGridService.sendEmail(request.email,

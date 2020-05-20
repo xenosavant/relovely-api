@@ -16,7 +16,8 @@ import {
   put,
   del,
   requestBody,
-  HttpErrors
+  HttpErrors,
+  RestBindings
 } from '@loopback/rest';
 import { User, UserWithRelations, Product } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
@@ -32,6 +33,8 @@ import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { userUpdateFields } from './user-update-fields';
 import { InstagramService } from '../../services';
+import { SellerAccountRequest } from './request/seller-account-request.interface';
+import { StripeService } from '../../services/stripe/stripe.service';
 
 export class UserController {
   constructor(
@@ -42,7 +45,10 @@ export class UserController {
     @inject(SecurityBindings.USER, { optional: true })
     private user: AppUserProfile,
     @service(InstagramService)
-    public instagramService: InstagramService
+    public instagramService: InstagramService,
+    @service(StripeService)
+    public stripeService: StripeService,
+    @inject(RestBindings.Http.REQUEST) private request: any
   ) { }
 
   productListFields = {
@@ -235,18 +241,19 @@ export class UserController {
     }
   }
 
-  @put('/users/{id}', {
+  @authenticate('jwt')
+  @post('/users/verify', {
     responses: {
       '204': {
-        description: 'User PUT success',
+        description: 'Verification POST success',
       },
     },
   })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() user: User,
+  async verify(
+    @requestBody() request: SellerAccountRequest,
   ): Promise<void> {
-    await this.userRepository.replaceById(id, user);
+    const token = await this.stripeService.createSeller(request, this.request.ip);
+    await this.userRepository.updateById(this.user.id as string, { stripeSellerId: token });
   }
 
 

@@ -1,4 +1,5 @@
 import { Address } from '../../../models/address.model';
+import { BankAccountRequest } from './bank-account.request.interface';
 
 export interface SellerAccountRequest {
   firstName: string;
@@ -10,4 +11,6 @@ export interface SellerAccountRequest {
   email: string;
   phone: string;
   ssn: string;
+  tosAcceptDate: number;
+  bankAccount?: BankAccountRequest
 }

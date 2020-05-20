@@ -1,6 +1,5 @@
 import { bind, /* inject, */ BindingScope } from '@loopback/core';
 import Stripe from 'stripe';
-import { request } from 'http';
 import { BankAccountRequest } from '../../controllers/user/request/bank-account.request.interface';
 import { SellerAccountRequest } from '../../controllers/user/request/seller-account-request.interface';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
@@ -12,14 +11,28 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 @bind({ scope: BindingScope.CONTEXT })
 export class StripeService {
 
-  private publishableLKey: string;
 
-  constructor() {
-    this.publishableLKey = process.env.STRIPE_PUBLISHABLE_KEY as string;
-  }
+  constructor() { }
 
-  async createSeller(seller: SellerAccountRequest, ip: string, bankAccount: string | undefined = undefined): Promise<string> {
+  async createSeller(seller: SellerAccountRequest, ip: string): Promise<string> {
+    let bankAccountToken = null;
+    if (seller.bankAccount) {
+      bankAccountToken = await this.createBankAccount(seller.bankAccount);
+    }
     const account: Stripe.AccountCreateParams = {
+      business_type: 'individual',
+      business_profile: {
+        mcc: '5691',
+        product_description: 'clothing & accessories',
+      },
+      tos_acceptance: {
+        date: seller.tosAcceptDate,
+        ip: ip
+      },
+      requested_capabilities: [
+        'card_payments', 'transfers'
+      ],
+      type: 'custom',
       individual: {
         first_name: seller.firstName,
         last_name: seller.lastName,
@@ -38,13 +51,14 @@ export class StripeService {
         },
         email: seller.email,
         id_number: seller.ssn,
-        phone: seller.phone,
-      }
+        phone: '+1' + seller.phone,
+      },
+
     };
-    if (bankAccount) {
-      account.external_account = bankAccount;
+    if (bankAccountToken) {
+      account.external_account = bankAccountToken;
     }
-    const response = await stripe.accounts.create();
+    const response = await stripe.accounts.create(account);
     return response.id;
   }
 

@@ -4,6 +4,7 @@ import { Order } from './order.model';
 import { UserPreferences } from './user-preferences.model';
 import { Address } from './address.model';
 import { CreditCard } from './credit-card.model';
+import { SellerDetails } from './seller-details';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
@@ -76,7 +77,12 @@ export class User extends Entity {
   @property({
     type: 'string'
   })
-  stripeId?: string;
+  stripeCustomerId?: string;
+
+  @property({
+    type: 'string'
+  })
+  stripeSellerId?: string;
 
   @property({
     type: 'string'
@@ -131,6 +137,9 @@ export class User extends Entity {
 
   @property(UserPreferences)
   preferences: UserPreferences;
+
+  @property(SellerDetails)
+  seller?: SellerDetails;
 
   @hasMany(() => Product, { keyTo: 'sellerId' })
   products: Product[];
