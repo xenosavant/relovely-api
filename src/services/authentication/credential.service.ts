@@ -22,16 +22,18 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
       where: { email: credentials.identifier },
     });
 
+    const message = 'Invalid login.'
+
     if (!foundUser) {
-      throw new HttpErrors.Forbidden();
+      throw new HttpErrors.Forbidden(message);
     }
 
     if (!foundUser.passwordHash) {
-      throw new HttpErrors.Forbidden();
+      throw new HttpErrors.Forbidden(message);
     }
     const valid = await this.verifyPassword(foundUser.passwordHash as string, credentials.password);
     if (!valid) {
-      throw new HttpErrors.Forbidden();
+      throw new HttpErrors.Forbidden(message);
     }
 
     return foundUser;

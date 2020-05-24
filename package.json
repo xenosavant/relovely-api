@@ -71,13 +71,15 @@
     "request-promise": "^4.2.5",
     "stripe": "^8.52.0",
     "strong-error-handler": "^3.4.0",
-    "tsc-watch": "^4.1.0"
+    "tsc-watch": "^4.1.0",
+    "multer": "^1.4.2"
   },
   "devDependencies": {
     "@loopback/build": "^5.0.0",
     "source-map-support": "^0.5.16",
     "@loopback/testlab": "^2.0.2",
     "@types/node": "^10.17.17",
+    "@types/multer": "^1.4.3",
     "@typescript-eslint/parser": "^2.25.0",
     "@typescript-eslint/eslint-plugin": "^2.25.0",
     "@loopback/eslint-config": "^6.0.2",

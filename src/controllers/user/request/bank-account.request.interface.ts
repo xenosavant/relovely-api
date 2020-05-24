@@ -1,5 +1,13 @@
-export interface BankAccountRequest {
+import { model, property } from '@loopback/repository';
+
+@model()
+export class BankAccountRequest {
+  @property()
   routingNumber: string;
+  @property()
   accountNumber: string;
-  name?: string;
+  @property()
+  firstName: string;
+  @property()
+  lastName: string;
 }

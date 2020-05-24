@@ -15,6 +15,8 @@ import {
   patch,
   put,
   del,
+  Request,
+  Response,
   requestBody,
   HttpErrors,
   RestBindings
@@ -35,6 +37,8 @@ import { userUpdateFields } from './user-update-fields';
 import { InstagramService } from '../../services';
 import { SellerAccountRequest } from './request/seller-account-request.interface';
 import { StripeService } from '../../services/stripe/stripe.service';
+import { BankAccountRequest } from './request/bank-account.request.interface';
+import { FILE_UPLOAD_SERVICE, FileUploadHandler } from '../../keys/upload-service.bindings';
 
 export class UserController {
   constructor(
@@ -48,7 +52,10 @@ export class UserController {
     public instagramService: InstagramService,
     @service(StripeService)
     public stripeService: StripeService,
-    @inject(RestBindings.Http.REQUEST) private request: any
+    @inject(RestBindings.Http.REQUEST)
+    private request: any,
+    @inject(FILE_UPLOAD_SERVICE)
+    private handler: FileUploadHandler,
   ) { }
 
   productListFields = {
@@ -250,11 +257,81 @@ export class UserController {
     },
   })
   async verify(
-    @requestBody() request: SellerAccountRequest,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SellerAccountRequest),
+        },
+      },
+    })
+    request: SellerAccountRequest,
   ): Promise<void> {
     const token = await this.stripeService.createSeller(request, this.request.ip);
-    await this.userRepository.updateById(this.user.id as string, { stripeSellerId: token, seller: { verificationStatus: 'review', bankAccountLinked: false } });
+    await this.userRepository.updateById(this.user.id as string, { firstName: request.firstName, lastName: request.lastName, stripeSellerId: token, seller: { verificationStatus: 'review', bankAccountLinked: false } });
+  }
+
+  @authenticate('jwt')
+  @post('/users/add-bank', {
+    responses: {
+      '204': {
+        description: 'Verification POST success',
+      },
+    },
+  })
+  async addBank(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(BankAccountRequest),
+        },
+      },
+    })
+    request: BankAccountRequest
+  ): Promise<void> {
+    const user = await this.userRepository.findById(this.user.id);
+    if (!user.stripeSellerId) {
+      throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
+    }
+    if (user.firstName !== request.firstName || user.lastName != request.lastName) {
+      throw new HttpErrors.Forbidden('Name on account must match name on account');
+    }
+    await this.stripeService.createBankAccount(user.stripeSellerId as string, request)
+    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, bankAccountLinked: true } });
+
   }
 
 
+  @authenticate('jwt')
+  @post('/users/add-document', {
+    responses: {
+      '204': {
+        description: 'Verification POST success',
+      },
+    },
+  })
+  async addDocument(
+    @requestBody({
+      description: 'multipart/form-data value.',
+      required: true,
+      content: {
+        'multipart/form-data': {
+          // Skip body parsing
+          'x-parser': 'stream',
+          schema: { type: 'object' },
+        },
+      },
+    })
+    request: Request,
+    @inject(RestBindings.Http.RESPONSE) response: Response,
+  ): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      this.handler(request, response, (err: unknown) => {
+        if (err) reject(err);
+        else {
+          const uploadedFiles = (request.files as any[]);
+          resolve(this.stripeService.uploadFile(uploadedFiles[0].buffer));
+        }
+      });
+    });
+  }
 }
