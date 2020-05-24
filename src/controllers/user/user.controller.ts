@@ -253,7 +253,7 @@ export class UserController {
     @requestBody() request: SellerAccountRequest,
   ): Promise<void> {
     const token = await this.stripeService.createSeller(request, this.request.ip);
-    await this.userRepository.updateById(this.user.id as string, { stripeSellerId: token });
+    await this.userRepository.updateById(this.user.id as string, { stripeSellerId: token, seller: { verificationStatus: 'review', bankAccountLinked: false } });
   }
 
 

@@ -81,14 +81,21 @@ export class StripeService {
     return response.id;
   }
 
-  async chargeCustomer(sellerAccountId: string, amount: number, CreditCardId: string) {
-    stripe.paymentIntents.create({
-      transfer_data: {
-        destination: sellerAccountId
+  async chargeCustomer(sellerAccountId: string, amount: number, cardId: string): Promise<string | null> {
+    const param: Stripe.ChargeCreateParams = {
+      destination: {
+        account: sellerAccountId,
+        amount: amount
       },
-      amount: amount,
-      payment_method: CreditCardId,
-      currency: 'USD'
-    })
+      source: cardId,
+      currency: 'USD',
+      capture: true
+    }
+    const charge = await stripe.charges.create(param);
+    if (charge.outcome?.network_status === 'approved_by_network') {
+      return charge.id
+    } else {
+      return null;
+    }
   }
 }

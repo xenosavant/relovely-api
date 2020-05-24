@@ -80,7 +80,7 @@ export class FacebookController {
       favorites: [],
       following: [],
       addresses: [],
-      creditCards: []
+      cards: []
     });
 
     const prefix = 'data:image/jpeg;base64,';

@@ -1,7 +1,7 @@
 import { model, property } from '@loopback/repository';
 
 @model({ settings: { strict: true } })
-export class CreditCard {
+export class Card {
   @property()
   name: string;
   @property()
@@ -14,4 +14,6 @@ export class CreditCard {
   expirationMonth: number;
   @property()
   expirationYear: number;
+  @property()
+  primary?: boolean;
 }

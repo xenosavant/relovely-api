@@ -3,7 +3,7 @@ import { Product, ProductWithRelations } from './product.model';
 import { Order } from './order.model';
 import { UserPreferences } from './user-preferences.model';
 import { Address } from './address.model';
-import { CreditCard } from './credit-card.model';
+import { Card } from './card.model';
 import { SellerDetails } from './seller-details';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
@@ -130,10 +130,8 @@ export class User extends Entity {
   })
   addresses: Address[];
 
-  @property.array(Address, {
-    required: false
-  })
-  creditCards: CreditCard[];
+  @property.array(Card)
+  cards: Card[];
 
   @property(UserPreferences)
   preferences: UserPreferences;

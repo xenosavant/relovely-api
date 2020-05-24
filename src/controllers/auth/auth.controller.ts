@@ -93,7 +93,7 @@ export class AuthController {
       followers: [],
       following: [],
       addresses: [],
-      creditCards: [],
+      cards: [],
       stripeCustomerId: stripeId
     });
 

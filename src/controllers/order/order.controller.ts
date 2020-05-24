@@ -18,15 +18,17 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import { Order, User, Product } from '../models';
-import { OrderRepository, UserRepository, ProductRepository } from '../repositories';
-import { inject } from '@loopback/core';
+import { Order, User, Product } from '../../models';
+import { OrderRepository, UserRepository, ProductRepository } from '../../repositories';
+import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
-import { AppUserProfile } from '../authentication/app-user-profile';
+import { AppUserProfile } from '../../authentication/app-user-profile';
 import { authenticate } from '@loopback/authentication';
 import * as moment from 'moment'
-import { userListFields } from './user/response/user-list.interface';
-import { ListResponse } from './list-response';
+import { userListFields } from '../user/response/user-list.interface';
+import { ListResponse } from '../list-response';
+import { StripeService } from '../../services/stripe/stripe.service';
+import { OrderRequest } from './order.request';
 
 @authenticate('jwt')
 export class OrderController {
@@ -38,7 +40,9 @@ export class OrderController {
     @repository(ProductRepository)
     public productRepository: ProductRepository,
     @inject(SecurityBindings.USER, { optional: true })
-    private user: AppUserProfile
+    private user: AppUserProfile,
+    @service(StripeService)
+    public stripeService: StripeService
   ) { }
 
   @post('/products/{id}/orders', {
@@ -51,28 +55,25 @@ export class OrderController {
   })
   async create(
     @param.path.string('id') id: typeof Product.prototype.id,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Order, {
-            title: 'NewOrderInUser',
-            exclude: ['id'],
-            optional: ['sellerId', 'buyerId', 'purchaseDate', 'shipDate', 'deliveryDate',
-              'total', 'status', 'shippingCost', 'tax']
-          }),
-        },
-      },
-    }) order: Omit<Order, 'id'>,
+    @requestBody() request: OrderRequest
   ): Promise<Order> {
     const product = await this.productRepository.findById(id);
     if (!product.sold) {
-      order.sellerId = product.sellerId;
-      order.buyerId = this.user.id as string;
-      order.purchaseDate = moment.utc().toDate();
-      order.status = 'ordered';
-      product.sold = true;
-      await this.productRepository.update(product);
-      return this.productRepository.order(id).create(order);
+      const seller = await this.userRepository.findById(product.sellerId, { fields: { stripeSellerId: true } });
+      const token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, product.price, request.paymentId);
+      if (token) {
+        product.sold = true;
+        await this.productRepository.update(product);
+        return this.productRepository.order(id).create({
+          sellerId: product.sellerId,
+          buyerId: this.user.id as string,
+          purchaseDate: moment.utc().toDate(),
+          status: 'ordered',
+          stripeChargeId: token
+        });
+      } else {
+        throw new HttpErrors.Conflict('Charge was declined');
+      }
     } else {
       throw new HttpErrors.Conflict('This product is no longer available');
     }
@@ -120,28 +121,6 @@ export class OrderController {
     }
   }
 
-  @patch('/orders', {
-    responses: {
-      '200': {
-        description: 'Order PATCH success count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Order, { partial: true }),
-        },
-      },
-    })
-    order: Order,
-    @param.query.object('where', getWhereSchemaFor(Order)) where?: Where<Order>,
-  ): Promise<Count> {
-    return this.orderRepository.updateAll(order, where);
-  }
-
   @get('/orders/{id}', {
     responses: {
       '200': {
@@ -162,51 +141,5 @@ export class OrderController {
       { relation: 'seller', scope: { fields: userListFields } },
       { relation: 'product' }]
     });
-  }
-
-  @patch('/orders/{id}', {
-    responses: {
-      '204': {
-        description: 'Order PATCH success',
-      },
-    },
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Order, { partial: true }),
-        },
-      },
-    })
-    order: Order,
-  ): Promise<void> {
-    await this.orderRepository.updateById(id, order);
-  }
-
-  @put('/orders/{id}', {
-    responses: {
-      '204': {
-        description: 'Order PUT success',
-      },
-    },
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() order: Order,
-  ): Promise<void> {
-    await this.orderRepository.replaceById(id, order);
-  }
-
-  @del('/orders/{id}', {
-    responses: {
-      '204': {
-        description: 'Order DELETE success',
-      },
-    },
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.orderRepository.deleteById(id);
   }
 }
