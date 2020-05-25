@@ -134,7 +134,7 @@ export class StripeService {
     return result.id;
   }
 
-  retrieveEvent(body: any, signature: any): Stripe.Event {
+  retrieveEvent(body: Buffer, signature: any): Stripe.Event {
     return stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET as string);
   }
 
