@@ -375,6 +375,7 @@ export class UserController {
     });
   }
 
+
   @post('/users/stripe-webhook', {
     responses: {
       '204': {
@@ -385,54 +386,50 @@ export class UserController {
   async stripeWebhook(
     request: Request
   ): Promise<void> {
+    let event: Stripe.Event;
+    const signature = request.headers['stripe-signature'];
     try {
-      let event: Stripe.Event;
-      const signature = request.headers['stripe-signature'];
-      try {
-        event = this.stripeService.retrieveEvent(request.body, signature);
-      } catch (err) {
-        throw new HttpErrors.BadRequest;
-      }
+      event = this.stripeService.retrieveEvent(request.body, signature);
+    } catch (err) {
+      throw new HttpErrors.BadRequest;
+    }
 
-      switch (event.type) {
-        case ('account.updated'): {
-          const account = event.data.object as Stripe.Account;
-          const user = await this.userRepository.findOne({ where: { stripeSellerId: account.id } });
-          if (!user) {
-            throw new HttpErrors.NotFound;
-          }
-          if (account.individual?.verification?.status === 'verified') {
-            await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'verified', missingInfo: [], errors: [] } });
+    switch (event.type) {
+      case ('account.updated'): {
+        const account = event.data.object as Stripe.Account;
+        const user = await this.userRepository.findOne({ where: { stripeSellerId: account.id } });
+        if (!user) {
+          throw new HttpErrors.NotFound;
+        }
+        if (account.individual?.verification?.status === 'verified') {
+          await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'verified', missingInfo: [], errors: [] } });
+          this.response.status(200).send('success');
+        }
+        const reason = account.requirements?.disabled_reason;
+        if (reason) {
+          if (reason.startsWith('rejected') || reason === 'listed') {
+            await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'rejected', missingInfo: [], errors: [] } });
             this.response.status(200).send('success');
           }
-          const reason = account.requirements?.disabled_reason;
-          if (reason) {
-            if (reason.startsWith('rejected') || reason === 'listed') {
-              await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'rejected', missingInfo: [], errors: [] } });
-              this.response.status(200).send('success');
-            }
-            if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
-              if (account.requirements?.eventually_due?.length) {
-                if (user.seller) {
-                  user.seller.missingInfo = account.requirements?.eventually_due;
-                  user.seller.verificationStatus = 'review'
-                  user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
-                  await this.userRepository.update(user);
-                }
-              } else {
-                await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });
+          if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
+            if (account.requirements?.eventually_due?.length) {
+              if (user.seller) {
+                user.seller.missingInfo = account.requirements?.eventually_due;
+                user.seller.verificationStatus = 'review'
+                user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
+                await this.userRepository.update(user);
               }
-              this.response.status(200).send('success');
+            } else {
+              await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });
             }
+            this.response.status(200).send('success');
           }
-          break;
         }
-        default:
-          this.response.status(200).send('success');
-          break;
+        break;
       }
-    } catch (error) {
-      this.response.status(400).send(error.message);
+      default:
+        this.response.status(200).send('success');
+        break;
     }
   }
 }
