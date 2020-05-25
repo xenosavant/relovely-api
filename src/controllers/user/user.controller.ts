@@ -275,6 +275,41 @@ export class UserController {
   }
 
   @authenticate('jwt')
+  @post('/users/update-verification', {
+    responses: {
+      '204': {
+        description: 'Verification POST success',
+      },
+    },
+  })
+  async updateVerification(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SellerAccountRequest),
+          optional: [
+            'lastName',
+            'birthDay',
+            'birthMonth',
+            'birthYear',
+            'address',
+            'email',
+            'phone',
+            'ssn',
+            'tosAcceptDate',
+            'bankAccount',
+            'documentFront',
+            'documentBack:']
+        },
+      },
+    })
+    request: Partial<SellerAccountRequest>,
+  ): Promise<void> {
+    const seller = await this.userRepository.findById(this.user.id);
+    await this.stripeService.updateSeller(seller.stripeSellerId as string, request);
+  }
+
+  @authenticate('jwt')
   @post('/users/add-bank', {
     responses: {
       '204': {

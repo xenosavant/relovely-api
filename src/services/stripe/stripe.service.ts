@@ -75,6 +75,10 @@ export class StripeService {
     return response.id;
   }
 
+  async updateSeller(id: string, updates: Partial<SellerAccountRequest>): Promise<Stripe.Account> {
+    return await stripe.accounts.update(id, updates);
+  }
+
   async createBankAccount(sellerId: string, account: BankAccountRequest): Promise<string> {
     const response = await stripe.tokens.create({
       bank_account: {
