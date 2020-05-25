@@ -39,6 +39,8 @@ import { SellerAccountRequest } from './request/seller-account-request.interface
 import { StripeService } from '../../services/stripe/stripe.service';
 import { BankAccountRequest } from './request/bank-account.request.interface';
 import { FILE_UPLOAD_SERVICE, FileUploadHandler } from '../../keys/upload-service.bindings';
+import Stripe from 'stripe';
+import { response } from '@loopback/openapi-v3/dist/decorators/response.decorator';
 
 export class UserController {
   constructor(
@@ -56,6 +58,8 @@ export class UserController {
     private request: any,
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
+    @inject(RestBindings.Http.RESPONSE)
+    private response: Response,
   ) { }
 
   productListFields = {
@@ -333,5 +337,63 @@ export class UserController {
         }
       });
     });
+  }
+
+  @authenticate('jwt')
+  @post('/users/stripe-webhook', {
+    responses: {
+      '204': {
+        description: 'Verification POST success',
+      },
+    },
+  })
+  async stripeWebhook(
+    request: Request
+  ): Promise<void> {
+    let event: Stripe.Event;
+    const signature = request.headers['stripe-signature'];
+    try {
+      event = this.stripeService.retrieveEvent(request.body, signature);
+    } catch (err) {
+      throw new HttpErrors.BadRequest;
+    }
+
+    switch (event.type) {
+      case ('account.updated'): {
+        const account = event.data.object as Stripe.Account;
+        const user = await this.userRepository.findOne({ where: { stripeSellerId: account.id } });
+        if (!user) {
+          throw new HttpErrors.NotFound;
+        }
+        if (account.individual?.verification?.status === 'verified') {
+          await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'verified', missingInfo: [], errors: [] } });
+          this.response.status(200).send('success');
+        }
+        const reason = account.requirements?.disabled_reason;
+        if (reason) {
+          if (reason.startsWith('rejected') || reason === 'listed') {
+            await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'rejected', missingInfo: [], errors: [] } });
+            this.response.status(200).send('success');
+          }
+          if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
+            if (account.requirements?.eventually_due?.length) {
+              if (!user.seller) {
+                user.seller = {
+                  missingInfo: [],
+                  errors: []
+                };
+              }
+              user.seller.missingInfo = account.requirements?.eventually_due;
+              user.seller.verificationStatus = 'review'
+              user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
+              await this.userRepository.update(user);
+            } else {
+              await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });
+            }
+            this.response.status(200).send('success');
+          }
+        }
+      }
+    }
   }
 }

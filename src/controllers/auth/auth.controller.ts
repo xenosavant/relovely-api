@@ -94,6 +94,11 @@ export class AuthController {
       following: [],
       addresses: [],
       cards: [],
+      preferences: {
+        sizes: [],
+        colors: [],
+        prices: []
+      },
       stripeCustomerId: stripeId
     });
 

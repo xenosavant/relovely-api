@@ -4,6 +4,8 @@ import { model, property } from '@loopback/repository';
 export class SellerDetails {
   @property.array('string')
   missingInfo: string[];
+  @property.array('string')
+  errors: string[];
   @property()
   suspended?: boolean;
   @property()
