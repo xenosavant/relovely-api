@@ -375,7 +375,6 @@ export class UserController {
     });
   }
 
-  @authenticate('jwt')
   @post('/users/stripe-webhook', {
     responses: {
       '204': {
