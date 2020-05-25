@@ -393,7 +393,11 @@ export class UserController {
             this.response.status(200).send('success');
           }
         }
+        break;
       }
+      default:
+        this.response.status(200).send('success');
+        break;
     }
   }
 }
