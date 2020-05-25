@@ -54,7 +54,7 @@ export class StripeService {
           verification: {
             document: {
               front: seller.documentFront,
-              back: seller.documentFront
+              back: seller.documentBack
             }
           }
         },
@@ -70,7 +70,7 @@ export class StripeService {
       response = await stripe.accounts.create(account);
     }
     catch (err) {
-      throw new HttpErrors.Forbidden('Information is incorrect');
+      throw new HttpErrors.BadRequest(err.message || 'Verification failed. Please try again.');
     }
     return response.id;
   }
