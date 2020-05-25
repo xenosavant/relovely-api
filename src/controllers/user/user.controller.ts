@@ -304,9 +304,11 @@ export class UserController {
       },
     })
     request: Partial<SellerAccountRequest>,
-  ): Promise<void> {
-    const seller = await this.userRepository.findById(this.user.id);
-    await this.stripeService.updateSeller(seller.stripeSellerId as string, request);
+  ): Promise<User> {
+    const user = await this.userRepository.findById(this.user.id);
+    await this.stripeService.updateSeller(user.stripeSellerId as string, request);
+    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, verificationStatus: 'review' } });
+    return user;
   }
 
   @authenticate('jwt')
@@ -336,7 +338,6 @@ export class UserController {
     }
     await this.stripeService.createBankAccount(user.stripeSellerId as string, request)
     await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, bankAccountLinked: true } });
-
   }
 
 
@@ -412,16 +413,12 @@ export class UserController {
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
             if (account.requirements?.eventually_due?.length) {
-              if (!user.seller) {
-                user.seller = {
-                  missingInfo: [],
-                  errors: []
-                };
+              if (user.seller) {
+                user.seller.missingInfo = account.requirements?.eventually_due;
+                user.seller.verificationStatus = 'review'
+                user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
+                await this.userRepository.update(user);
               }
-              user.seller.missingInfo = account.requirements?.eventually_due;
-              user.seller.verificationStatus = 'review'
-              user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
-              await this.userRepository.update(user);
             } else {
               await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });
             }
