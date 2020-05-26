@@ -267,9 +267,17 @@ export class UserController {
       },
     })
     request: SellerAccountRequest,
-  ): Promise<void> {
-    const token = await this.stripeService.createSeller(request, this.request.ip);
-    await this.userRepository.updateById(this.user.id as string, { firstName: request.firstName, lastName: request.lastName, stripeSellerId: token, seller: { verificationStatus: 'review', bankAccountLinked: false } });
+  ): Promise<User> {
+    const account = await this.stripeService.createSeller(request, this.request.ip);
+    await this.userRepository.updateById(this.user.id as string, {
+      firstName: request.firstName, lastName: request.lastName,
+      stripeSellerId: account.id, seller: {
+        verificationStatus: 'review', bankAccountLinked: false,
+        missingInfo: account.requirements?.currently_due || [],
+        errors: account.requirements?.errors?.map(e => e.reason) || []
+      }
+    });
+    return await this.userRepository.findById(this.user.id);
   }
 
   @authenticate('jwt')
@@ -294,6 +302,7 @@ export class UserController {
             'email',
             'phone',
             'ssn',
+            'ssn4',
             'tosAcceptDate',
             'bankAccount',
             'documentFront',
@@ -304,9 +313,14 @@ export class UserController {
     request: Partial<SellerAccountRequest>,
   ): Promise<User> {
     const user = await this.userRepository.findById(this.user.id);
-    await this.stripeService.updateSeller(user.stripeSellerId as string, request);
-    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, verificationStatus: 'review' } });
-    return user;
+    const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
+    await this.userRepository.updateById(this.user.id as string, {
+      seller: {
+        ...user.seller, verificationStatus: 'review', missingInfo: account.requirements?.currently_due || []
+        , errors: account.requirements?.errors?.map(e => e.reason) || []
+      }
+    });
+    return await this.userRepository.findById(this.user.id);
   }
 
   @authenticate('jwt')
@@ -326,7 +340,7 @@ export class UserController {
       },
     })
     request: BankAccountRequest
-  ): Promise<void> {
+  ): Promise<User> {
     const user = await this.userRepository.findById(this.user.id);
     if (!user.stripeSellerId) {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
@@ -334,8 +348,10 @@ export class UserController {
     if (user.firstName !== request.firstName || user.lastName != request.lastName) {
       throw new HttpErrors.Forbidden('Name on account must match name on account');
     }
-    await this.stripeService.createBankAccount(user.stripeSellerId as string, request)
-    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, bankAccountLinked: true } });
+    await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
+    const missing = user.seller?.missingInfo.splice(user.seller?.missingInfo.indexOf('external_acccount')) || [];
+    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, missingInfo: missing } });
+    return await this.userRepository.findById(this.user.id);
   }
 
 
@@ -421,12 +437,14 @@ export class UserController {
             response.status(200).send('success');
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
-            if (account.requirements?.eventually_due?.length) {
+            if (account.requirements && account.requirements.currently_due && account.requirements.currently_due.length) {
               if (user.seller) {
-                user.seller.missingInfo = account.requirements?.eventually_due;
-                user.seller.verificationStatus = 'review'
-                user.seller.errors = account.requirements.errors?.map(e => e.reason) || [];
-                await this.userRepository.update(user);
+                await this.userRepository.updateById(user.id, {
+                  seller: {
+                    missingInfo: account.requirements?.currently_due,
+                    verificationStatus: 'review', errors: account.requirements.errors?.map(e => e.reason) || []
+                  }
+                });
               }
             } else {
               await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });

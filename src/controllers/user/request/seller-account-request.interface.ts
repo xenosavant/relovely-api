@@ -21,7 +21,9 @@ export class SellerAccountRequest {
   @property()
   phone: string;
   @property()
-  ssn: string;
+  ssn4?: string;
+  @property()
+  ssn?: string;
   @property()
   tosAcceptDate: number;
   @property()

@@ -15,7 +15,7 @@ export class StripeService {
 
   constructor() { }
 
-  async createSeller(seller: SellerAccountRequest, ip: string): Promise<string> {
+  async createSeller(seller: SellerAccountRequest, ip: string): Promise<Stripe.Account> {
     let response;
     try {
       const account: Stripe.AccountCreateParams = {
@@ -49,14 +49,8 @@ export class StripeService {
             year: seller.birthYear
           },
           email: seller.email,
-          id_number: seller.ssn,
+          ssn_last_4: seller.ssn4,
           phone: '+1' + seller.phone,
-          verification: {
-            document: {
-              front: seller.documentFront,
-              back: seller.documentBack
-            }
-          }
         },
         settings: {
           payouts: {
@@ -70,13 +64,50 @@ export class StripeService {
       response = await stripe.accounts.create(account);
     }
     catch (err) {
-      throw new HttpErrors.BadRequest(err.message || 'Verification failed. Please try again.');
+      throw new HttpErrors.BadRequest(err.message || 'Something went wrong...please try again.');
     }
-    return response.id;
+    return response;
   }
 
   async updateSeller(id: string, updates: Partial<SellerAccountRequest>): Promise<Stripe.Account> {
-    return await stripe.accounts.update(id, updates);
+    const stripeUpdates: Stripe.AccountUpdateParams = {};
+    stripeUpdates.individual = {};
+    if (updates.address) {
+      stripeUpdates.individual.address = {
+        line1: updates.address.line1,
+        line2: updates.address.line2,
+        city: updates.address.city,
+        state: updates.address.state,
+        postal_code: updates.address.zip,
+        country: 'US'
+      }
+    }
+    if (updates.firstName || updates.lastName) {
+      stripeUpdates.individual.first_name = updates.firstName;
+      stripeUpdates.individual.last_name = updates.lastName;
+    }
+    if (updates.documentBack || updates.documentFront) {
+      stripeUpdates.individual.verification = {
+        document: {
+          front: updates.documentFront,
+          back: updates.documentBack
+        }
+      };
+    }
+    if (updates.phone) {
+      stripeUpdates.individual.phone = updates.phone;
+    }
+    if (updates.birthDay && updates.birthMonth && updates.birthYear) {
+      stripeUpdates.individual.dob = {
+        month: updates.birthMonth,
+        day: updates.birthDay,
+        year: updates.birthYear
+      }
+    }
+    if (updates.ssn) {
+      stripeUpdates.individual.id_number = updates.ssn;
+    }
+    return await stripe.accounts.update(id, stripeUpdates);
   }
 
   async createBankAccount(sellerId: string, account: BankAccountRequest): Promise<string> {
