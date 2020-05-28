@@ -2,7 +2,8 @@ import { Entity, model, property, belongsTo } from '@loopback/repository';
 import { User, Product, ProductWithRelations } from '.';
 import { UserList } from '../controllers/user/response/user-list.interface';
 import { UserWithRelations } from './user.model';
-import { Address } from 'cluster';
+import { Address } from './address.model';
+import { Card } from './card.model';
 
 @model({ settings: { strict: true } })
 export class Order extends Entity {
@@ -61,19 +62,31 @@ export class Order extends Entity {
     type: 'string',
     required: false,
   })
-  public trackingNumber?: string;
+  public shippingCarrier?: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  public shippingCarrerName?: string;
+  public shipmentId: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  public shippingCarrierId?: string;
+  public trackerId: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public shippingLabelUrl: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public trackingUrl: string;
 
   @property({
     type: 'string',
@@ -92,6 +105,18 @@ export class Order extends Entity {
     required: false,
   })
   public tax?: number;
+
+  @property({
+    type: 'string',
+    required: true
+  })
+  public paymentLast4: string;
+
+  @property({
+    type: 'string',
+    required: true
+  })
+  public paymentType: string;
 }
 
 export interface OrderRelations {

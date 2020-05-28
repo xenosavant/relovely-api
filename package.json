@@ -49,6 +49,7 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "@easypost/api": "^3.8.1",
     "@loopback/authentication": "^4.1.1",
     "@loopback/boot": "^2.0.2",
     "@loopback/context": "^3.2.0",
@@ -68,11 +69,11 @@
     "loopback-connector-mongodb": "^5.2.3",
     "loopback-connector-rest": "^3.6.0",
     "moment": "^2.24.0",
+    "multer": "^1.4.2",
     "request-promise": "^4.2.5",
     "stripe": "^8.52.0",
     "strong-error-handler": "^3.4.0",
-    "tsc-watch": "^4.1.0",
-    "multer": "^1.4.2"
+    "tsc-watch": "^4.1.0"
   },
   "devDependencies": {
     "@loopback/build": "^5.0.0",

@@ -135,13 +135,20 @@ export class StripeService {
     return response.id;
   }
 
-  async chargeCustomer(sellerAccountId: string, amount: number, cardId: string): Promise<string | null> {
+  async addCard(cardId: string, customerId: string): Promise<string> {
+    const result = await stripe.customers.createSource(customerId, { source: cardId });
+    return result.id;
+  }
+
+  async chargeCustomer(customerId: string, sellerAccountId: string, amount: number, cardId: string): Promise<string | null> {
     const param: Stripe.ChargeCreateParams = {
       destination: {
         account: sellerAccountId,
         amount: amount
       },
+      amount: amount,
       source: cardId,
+      customer: customerId,
       currency: 'USD',
       capture: true
     }

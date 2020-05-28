@@ -41,6 +41,8 @@ import { BankAccountRequest } from './request/bank-account.request.interface';
 import { FILE_UPLOAD_SERVICE, FileUploadHandler } from '../../keys/upload-service.bindings';
 import Stripe from 'stripe';
 import { response } from '@loopback/openapi-v3/dist/decorators/response.decorator';
+import { SellerDetails } from '../../models/seller-details';
+import { Card } from '../../models/card.model';
 
 export class UserController {
   constructor(
@@ -176,6 +178,7 @@ export class UserController {
     if (this.user.id !== id) {
       throw new HttpErrors.Forbidden();
     }
+    const user = await this.userRepository.findById(this.user.id, { fields: { username: true } })
     const keys = Object.keys(updates);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -185,7 +188,7 @@ export class UserController {
       if (key === 'username') {
         const username = updates['username'] as string;
         const existingUsername = await this.userRepository.findOne({ where: { username: username } });
-        if (existingUsername) {
+        if (existingUsername && existingUsername.username !== user.username) {
           throw new HttpErrors.Conflict('Username already exists');
         }
 
@@ -253,7 +256,7 @@ export class UserController {
   @authenticate('jwt')
   @post('/users/verify', {
     responses: {
-      '204': {
+      '200': {
         description: 'Verification POST success',
       },
     },
@@ -270,14 +273,50 @@ export class UserController {
   ): Promise<User> {
     const account = await this.stripeService.createSeller(request, this.request.ip);
     await this.userRepository.updateById(this.user.id as string, {
-      firstName: request.firstName, lastName: request.lastName,
+      firstName: request.firstName,
+      lastName: request.lastName,
       stripeSellerId: account.id, seller: {
-        verificationStatus: 'review', bankAccountLinked: false,
+        verificationStatus: 'review',
+        address: request.address,
         missingInfo: account.requirements?.currently_due || [],
         errors: account.requirements?.errors?.map(e => e.reason) || []
       }
     });
     return await this.userRepository.findById(this.user.id);
+  }
+
+  @authenticate('jwt')
+  @post('/users/add-card', {
+    responses: {
+      '200': {
+        description: 'Verification POST success',
+      },
+    },
+  })
+  async addCard(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Card),
+        },
+      },
+    })
+    card: Card,
+  ): Promise<User> {
+    const user = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, cards: true } });
+    if (!user.stripeCustomerId) {
+      throw new HttpErrors.BadRequest('User does not have a stripe customer id');
+    }
+    const id = await this.stripeService.addCard(card.stripeId, user.stripeCustomerId);
+    card.stripeId = id;
+    user.cards.forEach(c => {
+      if (c.primary) {
+        delete c.primary;
+      }
+    });
+    user.cards.push({ ...card, primary: true });
+    await this.userRepository.updateById(this.user.id, { cards: user.cards });
+    return await this.userRepository.findById(this.user.id, { fields: userDetailFields });
   }
 
   @authenticate('jwt')
@@ -314,12 +353,16 @@ export class UserController {
   ): Promise<User> {
     const user = await this.userRepository.findById(this.user.id);
     const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
-    await this.userRepository.updateById(this.user.id as string, {
-      seller: {
-        ...user.seller, verificationStatus: 'review', missingInfo: account.requirements?.currently_due || []
-        , errors: account.requirements?.errors?.map(e => e.reason) || []
-      }
-    });
+    const seller: SellerDetails = {
+      ...user.seller,
+      verificationStatus: 'review',
+      missingInfo: account.requirements?.currently_due || [],
+      errors: account.requirements?.errors?.map(e => e.reason) || []
+    }
+    if (request.address) {
+      seller.address = request.address;
+    }
+    await this.userRepository.updateById(this.user.id as string, { seller: seller });
     return await this.userRepository.findById(this.user.id);
   }
 
