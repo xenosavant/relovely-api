@@ -44,7 +44,7 @@ export class Order extends Entity {
     type: 'string',
     required: true,
   })
-  public status: 'ordered' | 'shipped' | 'unshipped' | 'cancelled' | 'delivered';
+  public status: 'purchased' | 'shipped' | 'delivered' | 'review' | 'cancelled' | 'error';
 
   @property({
     type: 'string',

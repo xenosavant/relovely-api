@@ -78,7 +78,7 @@ export class OrderController {
           sellerId: product.sellerId,
           buyerId: this.user.id as string,
           purchaseDate: moment.utc().toDate(),
-          status: 'ordered',
+          status: 'purchased',
           stripeChargeId: token,
           shipmentId: shipment.shipmentId,
           trackerId: shipment.trackerId,
