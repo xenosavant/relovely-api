@@ -24,7 +24,7 @@ import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { authenticate } from '@loopback/authentication';
-import * as moment from 'moment'
+import moment from 'moment';
 import { userListFields } from '../user/response/user-list.interface';
 import { ListResponse } from '../list-response';
 import { StripeService } from '../../services/stripe/stripe.service';
@@ -34,6 +34,8 @@ import { Address } from '../../models/address.model';
 
 @authenticate('jwt')
 export class OrderController {
+  charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
   constructor(
     @repository(OrderRepository)
     public orderRepository: OrderRepository,
@@ -74,7 +76,8 @@ export class OrderController {
         product.sold = true;
         await this.productRepository.update(product);
         const card = buyer.cards.find(c => c.stripeId === request.paymentId);
-        return this.productRepository.order(id).create({
+
+        return await this.productRepository.order(id).create({
           sellerId: product.sellerId,
           buyerId: this.user.id as string,
           purchaseDate: moment.utc().toDate(),
@@ -90,7 +93,8 @@ export class OrderController {
           shippingLabelUrl: shipment.postageLabelUrl,
           address: buyer.addresses.find(a => a.primary) as Address,
           paymentLast4: card?.last4,
-          paymentType: card?.type
+          paymentType: card?.type,
+          orderNumber: await this.generateOrderNumber()
         });
       } else {
         throw new HttpErrors.BadRequest('Charge was declined');
@@ -163,4 +167,24 @@ export class OrderController {
       { relation: 'product' }]
     });
   }
+
+  async generateOrderNumber(): Promise<string> {
+    const randomString = this.randomString(4, this.charString);
+    const date = moment().format('YYMMDD');
+    const orderNumber = date + '-' + randomString;
+    const existing = await this.orderRepository.count({ orderNumber: orderNumber });
+    if (existing.count > 0) {
+      return this.generateOrderNumber();
+    } else {
+      return orderNumber;
+    }
+  }
+
+  randomString(length: number, chars: string) {
+    var result = '';
+    for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
+  }
 }
+
+

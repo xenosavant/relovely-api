@@ -71,9 +71,8 @@ export class ShipmentController {
 
   @post('/shipments/easypost-webhook', {
     responses: {
-      '200': {
+      '204': {
         description: 'User model instance',
-        content: { 'application/json': { schema: getModelSchemaRef(PreviewShipmentResponse) } },
       },
     },
   })
@@ -81,7 +80,7 @@ export class ShipmentController {
     @param.query.string('secret') secret: string,
     @requestBody()
     event: any) {
-    if (!secret || secret !== process.env.EASYPOST_WEBHOOK_SECRET) {
+    if (!secret || secret !== process.env.EASYPOST_WEBHOOK_SECRET?.toString()) {
       throw new HttpErrors.Unauthorized();
     }
     if (event.description === 'tracker.updated') {

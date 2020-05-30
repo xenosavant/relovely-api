@@ -50,6 +50,12 @@ export class Order extends Entity {
     type: 'string',
     required: false,
   })
+  public orderNumber?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
   public shipDate?: Date;
 
   @property({
