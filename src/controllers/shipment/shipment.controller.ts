@@ -14,6 +14,7 @@ import { Address } from '../../models/address.model';
 import { PreviewShipmentRequest } from './preview-shipment.request';
 import { PreviewShipmentResponse } from './preview-shipment.response';
 import moment from 'moment';
+import { TaxService } from '../../services/tax/tax.service';
 
 
 export class ShipmentController {
@@ -27,7 +28,9 @@ export class ShipmentController {
     @inject(SecurityBindings.USER, { optional: true })
     private user: AppUserProfile,
     @service(EasyPostService)
-    public easypostService: EasyPostService
+    public easypostService: EasyPostService,
+    @service(TaxService)
+    public taxService: TaxService
   ) { }
 
   @authenticate('jwt')
@@ -66,7 +69,15 @@ export class ShipmentController {
   ): Promise<PreviewShipmentResponse> {
     const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
     request.fromAddress = seller.seller?.address
-    return await this.easypostService.createShipment(request);
+    const shipment = await this.easypostService.createShipment(request);
+    const taxRate = await this.taxService.calculateTax({
+      toAddress: request.toAddress,
+      fromAddress: request.fromAddress as Address,
+      shippingCost: shipment.shippingRate,
+      price: request.price,
+      sellerId: seller.id as string
+    })
+    return { ...shipment, taxRate: taxRate.tax }
   }
 
   @post('/shipments/easypost-webhook', {
