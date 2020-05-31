@@ -1,5 +1,5 @@
 import { model, Entity, property, belongsTo, hasOne } from '@loopback/repository';
-import { User, Product, ProductWithRelations, UserWithRelations } from '.';
+import { User, Product, ProductWithRelations, UserWithRelations, Order, OrderWithRelations } from '.';
 
 
 @model({ settings: { strict: true } })
@@ -23,6 +23,12 @@ export class Review extends Entity {
   })
   rating: number;
 
+  @property({
+    type: 'date',
+    required: true,
+  })
+  date: Date;
+
   @belongsTo(() => User, { name: 'seller' })
   sellerId: string;
 
@@ -32,10 +38,14 @@ export class Review extends Entity {
   @belongsTo(() => Product, { name: 'product' })
   productId: string;
 
+  @belongsTo(() => Order, { name: 'order' })
+  orderId: string;
+
 }
 
 export interface ReviewRelations {
   product?: ProductWithRelations;
+  order?: OrderWithRelations;
   reviewer?: UserWithRelations;
   seller?: UserWithRelations;
 }

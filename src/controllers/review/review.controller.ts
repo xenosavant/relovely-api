@@ -9,6 +9,8 @@ import { OrderRepository, UserRepository, ProductRepository } from '../../reposi
 import { inject } from '@loopback/core';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { SecurityBindings } from '@loopback/security';
+import moment from 'moment';
+import { userListFields } from '../user/response/user-list.interface';
 
 @authenticate('jwt')
 export class ReviewController {
@@ -39,11 +41,11 @@ export class ReviewController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Review),
+          schema: getModelSchemaRef(Review, { optional: ['date'] })
         },
       },
-    }) review: Review
-  ): Promise<Review> {
+    }) review: Partial<Review>
+  ): Promise<OrderWithRelations> {
     if (!id) {
       throw new HttpErrors.BadRequest();
     }
@@ -52,7 +54,7 @@ export class ReviewController {
       order: any,
       productPromise = this.productRepository.findById(id, { fields: { id: true }, include: [{ relation: 'review' }] }),
       userPromise = this.userRepository.findById(this.user.id, { fields: { id: true } }),
-      orderPromise = this.orderRepository.findOne({ where: { productId: id }, fields: { sellerId: true, buyerId: true } });
+      orderPromise = this.orderRepository.findOne({ where: { productId: id }, fields: { id: true, sellerId: true, buyerId: true } });
     await Promise.all([productPromise, userPromise, orderPromise]).then(([p, u, o]) => {
       order = o as OrderWithRelations;
       product = p as ProductWithRelations;
@@ -68,7 +70,15 @@ export class ReviewController {
       review.reviewerId = this.user.id as string;
       review.sellerId = id as string;
       review.productId = product.id;
-      return await this.productRepository.review(id).create(review);
+      review.orderId = order.id;
+      review.date = moment().toDate();
+      await this.productRepository.review(id).create(review);
+      return this.orderRepository.findById(order.id, {
+        include: [{ relation: 'buyer', scope: { fields: userListFields } },
+        { relation: 'seller', scope: { fields: userListFields } },
+        { relation: 'product' },
+        { relation: 'review' }]
+      })
     } else {
       throw new HttpErrors.BadRequest();
     }

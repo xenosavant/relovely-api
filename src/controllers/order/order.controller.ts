@@ -127,8 +127,6 @@ export class OrderController {
     { relation: 'buyer', scope: { fields: userListFields } },
     { relation: 'seller', scope: { fields: userListFields } }];
     let where = {};
-    let relation: string;
-    include.push();
     let list = [];
     if (currentUser.type === 'seller') {
       if (sales) {
@@ -161,11 +159,13 @@ export class OrderController {
   async findById(
     @param.path.string('id') id: string,
   ): Promise<Order> {
-    return this.orderRepository.findById(id, {
+    const order = await this.orderRepository.findById(id, {
       include: [{ relation: 'buyer', scope: { fields: userListFields } },
       { relation: 'seller', scope: { fields: userListFields } },
-      { relation: 'product' }]
+      { relation: 'product' },
+      { relation: 'review' }]
     });
+    return order;
   }
 
   async generateOrderNumber(): Promise<string> {

@@ -1,9 +1,10 @@
-import { Entity, model, property, belongsTo } from '@loopback/repository';
+import { Entity, model, property, belongsTo, hasOne } from '@loopback/repository';
 import { User, Product, ProductWithRelations } from '.';
 import { UserList } from '../controllers/user/response/user-list.interface';
 import { UserWithRelations } from './user.model';
 import { Address } from './address.model';
 import { Card } from './card.model';
+import { Review, ReviewWithRelations } from './review.model';
 
 @model({ settings: { strict: true } })
 export class Order extends Entity {
@@ -135,12 +136,16 @@ export class Order extends Entity {
     required: true
   })
   public paymentType: string;
+
+  @hasOne(() => Review, { keyTo: 'orderId' })
+  review: Review;
 }
 
 export interface OrderRelations {
   product?: ProductWithRelations;
   buyer?: UserWithRelations;
   seller?: UserWithRelations;
+  review?: ReviewWithRelations;
 }
 
 export type OrderWithRelations = Order & OrderRelations;
