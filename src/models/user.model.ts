@@ -5,6 +5,7 @@ import { UserPreferences } from './user-preferences.model';
 import { Address } from './address.model';
 import { Card } from './card.model';
 import { SellerDetails } from './seller-details';
+import { Review } from './review.model';
 
 @model({ settings: { strict: true, hiddenProperties: ['passwordHash'] } })
 export class User extends Entity {
@@ -147,6 +148,12 @@ export class User extends Entity {
 
   @hasMany(() => Order, { keyTo: 'sellerId' })
   sales: Order[];
+
+  @hasMany(() => Review, { keyTo: 'sellerId' })
+  reviews: Review[];
+
+  @hasMany(() => Review, { keyTo: 'reviewerId' })
+  ratings: Review[];
 }
 
 export interface UserRelations {

@@ -1,0 +1,44 @@
+import { model, Entity, property, belongsTo, hasOne } from '@loopback/repository';
+import { User, Product, ProductWithRelations, UserWithRelations } from '.';
+
+
+@model({ settings: { strict: true } })
+export class Review extends Entity {
+  @property({
+    type: 'string',
+    id: true,
+    generated: true
+  })
+  id?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  review: string;
+
+  @property({
+    type: 'number',
+    required: true,
+  })
+  rating: number;
+
+  @belongsTo(() => User, { name: 'seller' })
+  sellerId: string;
+
+  @belongsTo(() => User, { name: 'reviewer' })
+  reviewerId: string;
+
+  @belongsTo(() => Product, { name: 'product' })
+  productId: string;
+
+}
+
+export interface ReviewRelations {
+  product?: ProductWithRelations;
+  reviewer?: UserWithRelations;
+  seller?: UserWithRelations;
+}
+
+export type ReviewWithRelations = User & ReviewRelations;
+

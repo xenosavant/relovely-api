@@ -4,6 +4,7 @@ import { ImageSet } from './image-set';
 import { User, UserWithRelations } from './user.model';
 import { UserList } from '../controllers/user/response/user-list.interface';
 import { Order } from './order.model';
+import { Review, ReviewWithRelations } from './review.model';
 
 @model({ settings: { strict: true } })
 export class Product extends Entity {
@@ -124,10 +125,15 @@ export class Product extends Entity {
 
   @hasOne(() => Order)
   order: Order;
+
+  @hasOne(() => Review)
+  review: Review;
+
 }
 
 export interface ProductRelations {
   seller: UserWithRelations;
+  review: ReviewWithRelations;
 }
 
 export type ProductWithRelations = Product & ProductRelations;

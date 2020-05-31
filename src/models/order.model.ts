@@ -31,6 +31,30 @@ export class Order extends Entity {
   purchaseDate: Date;
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  public shipDate?: Date;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public deliveryDate?: Date;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public disputeDate?: Date;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  public resolutionDate?: Date;
+
+  @property({
     required: true,
   })
   public address: Address;
@@ -44,25 +68,13 @@ export class Order extends Entity {
     type: 'string',
     required: true,
   })
-  public status: 'purchased' | 'shipped' | 'delivered' | 'review' | 'cancelled' | 'error';
+  public status: 'purchased' | 'shipped' | 'delivered' | 'resolved' | 'cancelled' | 'error' | 'disputed';
 
   @property({
     type: 'string',
     required: false,
   })
   public orderNumber?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  public shipDate?: Date;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  public deliveryDate?: Date;
 
   @property({
     type: 'string',
