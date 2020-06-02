@@ -12,7 +12,7 @@ export class ReviewRepository extends DefaultCrudRepository<
   > {
   public readonly reviewer: BelongsToAccessor<User, typeof Review.prototype.id>;
   public readonly seller: BelongsToAccessor<User, typeof Review.prototype.id>;
-  public readonly product: BelongsToAccessor<Product, typeof Product.prototype.id>;
+  public readonly product: BelongsToAccessor<Product, typeof Review.prototype.id>;
 
   constructor(
     @inject('datasources.db') dataSource: DbDataSource,

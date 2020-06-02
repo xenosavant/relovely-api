@@ -48,38 +48,6 @@ export class ShipmentController {
     return await this.easypostService.verifyAddress(address);
   }
 
-  @authenticate('jwt')
-  @post('/shipments/preview', {
-    responses: {
-      '200': {
-        description: 'User model instance',
-        content: { 'application/json': { schema: getModelSchemaRef(PreviewShipmentResponse) } },
-      },
-    },
-  })
-  async preview(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(PreviewShipmentRequest),
-        },
-      },
-    })
-    request: PreviewShipmentRequest
-  ): Promise<PreviewShipmentResponse> {
-    const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
-    request.fromAddress = seller.seller?.address
-    const shipment = await this.easypostService.createShipment(request);
-    const taxRate = await this.taxService.calculateTax({
-      toAddress: request.toAddress,
-      fromAddress: request.fromAddress as Address,
-      shippingCost: shipment.shippingRate,
-      price: request.price,
-      sellerId: seller.id as string
-    })
-    return { ...shipment, taxRate: taxRate.tax }
-  }
-
   @post('/shipments/easypost-webhook', {
     responses: {
       '204': {

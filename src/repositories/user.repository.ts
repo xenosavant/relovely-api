@@ -37,7 +37,7 @@ export class UserRepository extends DefaultCrudRepository<
     this.products = this.createHasManyRepositoryFactoryFor('products', productRepositoryGetter);
     this.registerInclusionResolver('products', this.products.inclusionResolver);
     this.reviews = this.createHasManyRepositoryFactoryFor('reviews', reviewRepositoryGetter);
-    this.registerInclusionResolver('reviews', this.products.inclusionResolver);
+    this.registerInclusionResolver('reviews', this.reviews.inclusionResolver);
     this.ratings = this.createHasManyRepositoryFactoryFor('products', reviewRepositoryGetter);
     this.registerInclusionResolver('products', this.products.inclusionResolver);
   }

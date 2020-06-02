@@ -17,4 +17,5 @@ export interface UserDetail {
   sales?: Product[];
   favorites?: Product[];
   type: string;
+  averageRating?: number;
 }

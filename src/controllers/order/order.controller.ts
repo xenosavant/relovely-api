@@ -31,6 +31,9 @@ import { StripeService } from '../../services/stripe/stripe.service';
 import { OrderRequest } from './order.request';
 import { EasyPostService } from '../../services/easypost/easypost.service';
 import { Address } from '../../models/address.model';
+import { PreviewShipmentResponse } from '../shipment/preview-shipment.response';
+import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
+import { TaxService } from '../../services/tax/tax.service';
 
 @authenticate('jwt')
 export class OrderController {
@@ -48,7 +51,9 @@ export class OrderController {
     @service(StripeService)
     public stripeService: StripeService,
     @service(EasyPostService)
-    public easyPostService: EasyPostService
+    public easyPostService: EasyPostService,
+    @service(TaxService)
+    public taxService: TaxService
   ) { }
 
   @post('/products/{id}/orders', {
@@ -166,6 +171,70 @@ export class OrderController {
       { relation: 'review' }]
     });
     return order;
+  }
+
+  @authenticate('jwt')
+  @post('/shipments/preview', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: { 'application/json': { schema: getModelSchemaRef(PreviewShipmentResponse) } },
+      },
+    },
+  })
+  async preview(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(PreviewShipmentRequest),
+        },
+      },
+    })
+    request: PreviewShipmentRequest
+  ): Promise<PreviewShipmentResponse> {
+    const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
+    request.fromAddress = seller.seller?.address
+    const shipment = await this.easyPostService.createShipment(request);
+    const taxRate = await this.taxService.calculateTax({
+      toAddress: request.toAddress,
+      fromAddress: request.fromAddress as Address,
+      shippingCost: shipment.shippingRate,
+      price: request.price,
+      sellerId: seller.id as string
+    })
+    return { ...shipment, taxRate: taxRate.tax }
+  }
+
+  @post('/shipments/easypost-webhook', {
+    responses: {
+      '204': {
+        description: 'User model instance',
+      },
+    },
+  })
+  async webhook(
+    @param.query.string('secret') secret: string,
+    @requestBody()
+    event: any) {
+    if (!secret || secret !== process.env.EASYPOST_WEBHOOK_SECRET?.toString()) {
+      throw new HttpErrors.Unauthorized();
+    }
+    if (event.description === 'tracker.updated') {
+      const id = event.result.id;
+      const order = await this.orderRepository.findOne({ where: { trackerId: id } });
+      if (!order) {
+        throw new HttpErrors.NotFound();
+      }
+      if (event.result.status === 'in_transit') {
+        if (order.status === 'purchased') {
+          await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: moment().toDate() });
+        }
+      } else if (event.result.status === 'delivered') {
+        await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: moment().toDate() });
+      } else if (['error', 'failure'].includes(event.result.status)) {
+        await this.orderRepository.updateById(order.id, { status: 'error' });
+      }
+    }
   }
 
   async generateOrderNumber(): Promise<string> {

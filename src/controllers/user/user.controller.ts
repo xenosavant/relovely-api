@@ -114,7 +114,7 @@ export class UserController {
     const user: UserWithRelations = await this.userRepository.findById(id,
       {
         fields: userDetailFields,
-        include: [{ relation: 'products', scope: { fields: productDetailFields } }]
+        include: [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }]
       });
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
@@ -127,6 +127,13 @@ export class UserController {
         }).then(result => {
           promiseDictionary['followers'] = result;
         }));
+      let rating = 0;
+      if (user.reviews) {
+        rating = (user.reviews.map(val => val.rating).reduce((prev, next) => {
+          return prev + next;
+        }) / user.reviews.length);
+      }
+      response.averageRating = rating;
     }
     promises.push(
       this.userRepository.find({
