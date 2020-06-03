@@ -47,36 +47,4 @@ export class ShipmentController {
   ): Promise<AddressVerification> {
     return await this.easypostService.verifyAddress(address);
   }
-
-  @post('/shipments/easypost-webhook', {
-    responses: {
-      '204': {
-        description: 'User model instance',
-      },
-    },
-  })
-  async webhook(
-    @param.query.string('secret') secret: string,
-    @requestBody()
-    event: any) {
-    if (!secret || secret !== process.env.EASYPOST_WEBHOOK_SECRET?.toString()) {
-      throw new HttpErrors.Unauthorized();
-    }
-    if (event.description === 'tracker.updated') {
-      const id = event.result.id;
-      const order = await this.orderRepository.findOne({ where: { trackerId: id } });
-      if (!order) {
-        throw new HttpErrors.NotFound();
-      }
-      if (event.result.status === 'in_transit') {
-        if (order.status === 'purchased') {
-          await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: moment().toDate() });
-        }
-      } else if (event.result.status === 'delivered') {
-        await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: moment().toDate() });
-      } else if (['error', 'failure'].includes(event.result.status)) {
-        await this.orderRepository.updateById(order.id, { status: 'error' });
-      }
-    }
-  }
 }

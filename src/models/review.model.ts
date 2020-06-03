@@ -13,9 +13,15 @@ export class Review extends Entity {
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
   })
-  review: string;
+  title: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  body: string;
 
   @property({
     type: 'number',
@@ -50,5 +56,5 @@ export interface ReviewRelations {
   seller?: UserWithRelations;
 }
 
-export type ReviewWithRelations = User & ReviewRelations;
+export type ReviewWithRelations = Review & ReviewRelations;
 

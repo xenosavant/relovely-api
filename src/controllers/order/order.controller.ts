@@ -128,7 +128,7 @@ export class OrderController {
     @param.query.boolean('sales') sales?: boolean
   ): Promise<ListResponse<Order>> {
     const currentUser = await this.userRepository.findById(this.user.id);
-    const include = [{ relation: 'product' },
+    const include = [{ relation: 'product', scope: { fields: { images: true, title: true, id: true } } },
     { relation: 'buyer', scope: { fields: userListFields } },
     { relation: 'seller', scope: { fields: userListFields } }];
     let where = {};

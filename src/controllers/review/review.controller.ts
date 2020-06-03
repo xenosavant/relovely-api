@@ -1,16 +1,17 @@
 import { authenticate } from '@loopback/authentication';
 import { ReviewRepository } from '../../repositories/review.repository';
 import { repository, Order } from '@loopback/repository';
-import { Review } from '../../models/review.model';
-import { post, getModelSchemaRef, param, requestBody, HttpErrors } from '@loopback/rest';
-import { Product, ProductWithRelations, UserWithRelations, OrderWithRelations, ProductRelations } from '../../models';
+import { Review, ReviewWithRelations } from '../../models/review.model';
+import { post, getModelSchemaRef, param, requestBody, HttpErrors, get } from '@loopback/rest';
+import { Product, ProductWithRelations, UserWithRelations, OrderWithRelations, ProductRelations, User } from '../../models';
 import { OrderRequest } from '../order/order.request';
 import { OrderRepository, UserRepository, ProductRepository } from '../../repositories';
 import { inject } from '@loopback/core';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { SecurityBindings } from '@loopback/security';
 import moment from 'moment';
-import { userListFields } from '../user/response/user-list.interface';
+import { userListFields, UserList } from '../user/response/user-list.interface';
+import { UserReviewsResponse } from '../user/response/user-reviews-response';
 
 @authenticate('jwt')
 export class ReviewController {
@@ -52,7 +53,7 @@ export class ReviewController {
     let product: any,
       buyer: any,
       order: any,
-      productPromise = this.productRepository.findById(id, { fields: { id: true }, include: [{ relation: 'review' }] }),
+      productPromise = this.productRepository.findById(id, { fields: { id: true, sellerId: true }, include: [{ relation: 'review' }] }),
       userPromise = this.userRepository.findById(this.user.id, { fields: { id: true } }),
       orderPromise = this.orderRepository.findOne({ where: { productId: id }, fields: { id: true, sellerId: true, buyerId: true } });
     await Promise.all([productPromise, userPromise, orderPromise]).then(([p, u, o]) => {
@@ -68,9 +69,9 @@ export class ReviewController {
         throw new HttpErrors.Forbidden();
       }
       review.reviewerId = this.user.id as string;
-      review.sellerId = id as string;
       review.productId = product.id;
       review.orderId = order.id;
+      review.sellerId = product.sellerId;
       review.date = moment().toDate();
       await this.productRepository.review(id).create(review);
       return this.orderRepository.findById(order.id, {
@@ -83,6 +84,31 @@ export class ReviewController {
       throw new HttpErrors.BadRequest();
     }
 
+  }
+
+  @get('/users/{id}/reviews', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(User, { includeRelations: true }),
+          },
+        },
+      },
+    },
+  })
+  async reviews(
+    @param.path.string('id') id: string
+  ): Promise<UserReviewsResponse> {
+    const user = await this.userRepository.findById(id, { fields: { username: true } });
+    const reviews: ReviewWithRelations[] = await this.reviewRepository.find({
+      where: { sellerId: id },
+      fields: { id: true, body: true, rating: true, date: true, title: true, productId: true, reviewerId: true },
+      include: [{ relation: 'product', scope: { fields: { title: true, id: true } } },
+      { relation: 'reviewer', scope: { fields: userListFields } }]
+    });
+    return { name: user.username as string, reviews: reviews.map(r => { return { ...r, percentage: (r.rating / 5) * 100, reviewer: r.reviewer as UserList } }) };
   }
 
 }

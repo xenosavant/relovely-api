@@ -43,6 +43,8 @@ import Stripe from 'stripe';
 import { response } from '@loopback/openapi-v3/dist/decorators/response.decorator';
 import { SellerDetails } from '../../models/seller-details';
 import { Card } from '../../models/card.model';
+import { Review } from '../../models/review.model';
+import { UserReviewsResponse } from './response/user-reviews-response';
 
 export class UserController {
   constructor(
@@ -94,7 +96,6 @@ export class UserController {
       throw new HttpErrors.Unauthorized;
     }
   }
-
 
   @get('/users/{id}', {
     responses: {
@@ -438,7 +439,6 @@ export class UserController {
       });
     });
   }
-
 
   @post('/users/stripe-webhook', {
     responses: {

@@ -11,7 +11,6 @@ export class ReviewRepository extends DefaultCrudRepository<
   ReviewRelations
   > {
   public readonly reviewer: BelongsToAccessor<User, typeof Review.prototype.id>;
-  public readonly seller: BelongsToAccessor<User, typeof Review.prototype.id>;
   public readonly product: BelongsToAccessor<Product, typeof Review.prototype.id>;
 
   constructor(
@@ -20,10 +19,8 @@ export class ReviewRepository extends DefaultCrudRepository<
     @repository.getter('ProductRepository') protected productRepositoryGetter: Getter<ProductRepository>
   ) {
     super(Review, dataSource);
-    this.seller = this.createBelongsToAccessorFor('seller', userRepositoryGetter);
-    this.registerInclusionResolver('seller', this.seller.inclusionResolver);
     this.reviewer = this.createBelongsToAccessorFor('reviewer', userRepositoryGetter);
-    this.registerInclusionResolver('buyer', this.reviewer.inclusionResolver);
+    this.registerInclusionResolver('reviewer', this.reviewer.inclusionResolver);
     this.product = this.createBelongsToAccessorFor('product', productRepositoryGetter);
     this.registerInclusionResolver('product', this.product.inclusionResolver);
   }
