@@ -69,7 +69,6 @@ export class InstagramService {
       headers: { 'Accept': 'application/json' }
     }
     const response = await client(options);
-
     return response.body;
   }
 }
