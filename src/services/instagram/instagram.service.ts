@@ -65,7 +65,8 @@ export class InstagramService {
   public async getUserProfile(username: string): Promise<any> {
     const options = {
       method: 'GET',
-      uri: `${this.instagramUrl}/${username}?__a=1`
+      uri: `${this.instagramUrl}/${username}?__a=1`,
+      headers: { 'Accept': 'application/json' }
     }
     const response = await client(options);
 
