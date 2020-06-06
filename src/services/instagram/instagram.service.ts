@@ -59,7 +59,7 @@ export class InstagramService {
       headers: { 'Content-Type': 'application/json' }
     }
     const response = JSON.parse(await client(options));
-    return { username: response.username, email: response.email };
+    return { username: response.usernam };
   }
 
   public async getUserProfile(username: string): Promise<ProfileData> {

@@ -52,16 +52,17 @@ export class InstagramController {
     request: OAuthRequest,
   ): Promise<void> {
 
+    if (!request.email) {
+      throw new HttpErrors.BadRequest('Email is required');
+    }
+
     const authResponse = await this.instagramService.getAccessToken(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
     const profile = await this.instagramService.getUserProfile(data.username);
-    const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token)
-
-    if (!data.email) {
-      throw new HttpErrors.BadRequest('No email');
-    }
+    const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
 
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
 
     if (existingUser) {
       if (existingUser.seller && existingUser.seller.approved) {
@@ -71,7 +72,11 @@ export class InstagramController {
       }
     }
 
-    const stripeId = await this.stripeService.createCustomer(data.email);
+    if (existingEmail) {
+      throw new HttpErrors.Conflict('That email is not available.');
+    }
+
+    const stripeId = await this.stripeService.createCustomer(request.email as string);
 
     const rand = Math.random().toString();
     const now = new Date();
@@ -82,7 +87,7 @@ export class InstagramController {
       profileImageUrl: profile.graphql.user.profile_pic_url_hd,
       type: 'seller',
       username: data.username,
-      email: data.email,
+      email: request.email as string,
       instagramAuthToken: longLivedToken.access_token,
       instagramUsername: data.username,
       emailVerificationCode: verficationCodeString,
@@ -108,7 +113,7 @@ export class InstagramController {
     });
 
     // TODO: remove this in production
-    await this.sendGridService.sendEmail(user.email as string, `You're approved to sell on Relovely!`,
+    await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
       `Click <a href="dev.relovely.com/account/verify?type=seller&code=${encodeURI(verficationCodeString)}">here</a> to get started.`);
   }
 }
