@@ -62,7 +62,6 @@ export class InstagramController {
     const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
 
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
-    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
 
     if (existingUser) {
       if (existingUser.seller && existingUser.seller.approved) {
@@ -71,6 +70,8 @@ export class InstagramController {
         throw new HttpErrors.Conflict('The account linked to that Instagram is pending approval');
       }
     }
+
+    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
 
     if (existingEmail) {
       throw new HttpErrors.Conflict('That email is not available.');

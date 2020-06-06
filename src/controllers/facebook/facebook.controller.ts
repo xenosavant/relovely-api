@@ -10,7 +10,7 @@ import { AppUserProfile } from "../../authentication/app-user-profile";
 import { OAuthRequest } from "../../authentication/oauth-request";
 import { AppCredentialService } from "../../services/authentication/credential.service";
 import { SecurityBindings } from '@loopback/security';
-import { User } from "../../models";
+import { User, UserWithRelations } from "../../models";
 import { CloudinaryService } from "../../services";
 import * as fs from 'fs';
 import { StripeService } from '../../services/stripe/stripe.service';
@@ -63,9 +63,17 @@ export class FacebookController {
     const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
     const picture = await this.facebookService.getProfilePicture(longLivedToken.access_token);
     const existingFacebookUser = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
+
     if (existingFacebookUser) {
       throw new HttpErrors.BadRequest('This facebook account is already linked with an existing user');
     }
+
+    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
+
+    if (existingEmail) {
+      throw new HttpErrors.Conflict('That email is not available.');
+    }
+
 
     const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
 
