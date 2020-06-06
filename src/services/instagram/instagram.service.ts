@@ -70,6 +70,6 @@ export class InstagramService {
     }
     const response = await client(options);
 
-    return response;
+    return response.body;
   }
 }
