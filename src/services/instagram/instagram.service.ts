@@ -58,22 +58,17 @@ export class InstagramService {
       uri: `${this.graphUrl}/me?fields=username&access_token=${token}`,
       headers: { 'Content-Type': 'application/json' }
     }
-    const response = JSON.parse(await client(options));
+    const response = await client(options);
     return { username: response.username };
   }
 
-  public async getUserProfile(username: string): Promise<ProfileData> {
+  public async getUserProfile(username: string): Promise<any> {
     const options = {
       method: 'GET',
-      uri: `${this.instagramUrl}/${username}/?__a=1`
+      uri: `${this.instagramUrl}/${username}?__a=1`
     }
-    let response;
-    try {
-      response = await client(options);
-    } catch (err) {
-      response = null;
-    }
+    const response = await client(options);
 
-    return response ? JSON.parse(response) : response;
+    return response;
   }
 }

@@ -58,7 +58,7 @@ export class InstagramController {
 
     const authResponse = await this.instagramService.getAccessToken(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
-    const profile = await this.instagramService.getUserProfile(data.username);
+    throw new HttpErrors.InternalServerError(await this.instagramService.getUserProfile(data.username));
     // const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
 
     // const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
