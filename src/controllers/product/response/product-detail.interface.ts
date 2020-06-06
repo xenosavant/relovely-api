@@ -15,6 +15,7 @@ export interface ProductDetail {
   price: number;
   sold: boolean;
   tags: string[];
+  weight: number;
 }
 
 export const productDetailFields = {

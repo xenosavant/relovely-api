@@ -122,17 +122,12 @@ export class EasyPostService {
     })
   }
 
-
-
-
-
-
   private compareAddresses(address1: Address, address2: EasyPostAddress): boolean {
-    return (address1.city === address2.city
-      && address1.line1 === address2.street1
-      && address1.line2 === address2.street2
-      && address1.state === address2.state
-      && address1.zip === address2.zip)
+    return (address1.city.toUpperCase() === address2.city.toUpperCase()
+      && address1.line1.toUpperCase() === address2.street1.toUpperCase()
+      && address1.line2.toUpperCase() === address2.street2.toUpperCase()
+      && address1.state.toUpperCase() === address2.state.toUpperCase()
+      && address1.zip.toUpperCase() === address2.zip.toUpperCase())
   }
 
 

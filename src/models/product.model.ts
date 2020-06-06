@@ -117,6 +117,12 @@ export class Product extends Entity {
   })
   cloudId: string;
 
+  @property({
+    type: 'number',
+    required: true,
+  })
+  weight: number;
+
   @property.array(String)
   tags?: string[];
 

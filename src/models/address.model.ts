@@ -3,6 +3,8 @@ import { model, property } from '@loopback/repository';
 @model({ settings: { strict: true } })
 export class Address {
   @property()
+  id?: string;
+  @property()
   name?: string;
   @property()
   line1: string;

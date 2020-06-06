@@ -10,7 +10,7 @@ import { post, getModelSchemaRef, requestBody } from '@loopback/rest';
 import { AddressVerification } from '../../services/easypost/address-verification';
 
 
-export class ShipmentController {
+export class TaxController {
   constructor(
     @service(TaxService)
     public taxService: TaxService) {
@@ -18,7 +18,7 @@ export class ShipmentController {
   }
 
   @authenticate('jwt')
-  @post('/shipments/verify-address', {
+  @post('/tax/calculate-tax', {
     responses: {
       '200': {
         description: 'User model instance',

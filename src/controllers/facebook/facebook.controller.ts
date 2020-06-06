@@ -64,7 +64,7 @@ export class FacebookController {
     const picture = await this.facebookService.getProfilePicture(longLivedToken.access_token);
     const existingFacebookUser = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
     if (existingFacebookUser) {
-      return { error: 'This facebook account is already linked with an existing user' };
+      throw new HttpErrors.BadRequest('This facebook account is already linked with an existing user');
     }
 
     const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
@@ -122,12 +122,12 @@ export class FacebookController {
   ): Promise<AuthResponse> {
 
     const authResponse = await this.facebookService.getAccessToken(request.code, 'signin');
-    const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
+    const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token);
     const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
 
     const user = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
     if (!user) {
-      return { error: 'No user is linked to this facebook account. Please log in first and then link your facebook account' };
+      throw new HttpErrors.BadRequest('No user is linked to this facebook account. Please log in first and then link your facebook account');
     }
 
     user.signedInWithFacebook = true;

@@ -69,7 +69,7 @@ export class Order extends Entity {
     type: 'string',
     required: true,
   })
-  public status: 'purchased' | 'shipped' | 'delivered' | 'resolved' | 'cancelled' | 'error' | 'disputed';
+  public status: 'purchased' | 'shipped' | 'delivered' | 'refunded' | 'cancelled' | 'error' | 'disputed'
 
   @property({
     type: 'string',
