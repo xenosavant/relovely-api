@@ -55,11 +55,11 @@ export class InstagramService {
   public async getBasicUserData(token: string): Promise<BasicData> {
     const options = {
       method: 'GET',
-      uri: `${this.graphUrl}/me?fields=username&access_token=${token}`,
+      uri: `${this.graphUrl}/me?fields=username,email&access_token=${token}`,
       headers: { 'Content-Type': 'application/json' }
     }
     const response = JSON.parse(await client(options));
-    return { username: response.username };
+    return { username: response.username, email: response.email };
   }
 
   public async getUserProfile(username: string): Promise<ProfileData> {

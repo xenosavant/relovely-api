@@ -11,4 +11,6 @@ export class SellerDetails {
   verificationStatus?: 'unverified' | 'review' | 'rejected' | 'verified';
   @property()
   address?: Address
+  @property()
+  verified?: boolean;
 }
