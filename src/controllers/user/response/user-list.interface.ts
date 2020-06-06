@@ -9,7 +9,7 @@ export interface UserList {
 
 export const userDetailFields = {
   instagramUsername: false, passwordHash: false, instagramAuthToken:
-    false, instagramUserId: false, signedInWithInstagram: false, signedInWithFacebook: false,
+    false, instagramUserId: false, signedInWithInstagram: false,
   facebookAuthToken: false, facebookUserId: false, emailVerificationCode: false,
   passwordVerificationCode: false
 };

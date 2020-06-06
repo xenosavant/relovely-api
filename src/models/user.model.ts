@@ -65,12 +65,6 @@ export class User extends Entity {
   facebookAuthToken?: string;
 
   @property({
-    type: 'boolean',
-    required: true
-  })
-  signedInWithFacebook?: boolean;
-
-  @property({
     type: 'string'
   })
   facebookUserId?: string;

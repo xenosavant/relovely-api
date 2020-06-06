@@ -74,7 +74,6 @@ export class FacebookController {
       stripeCustomerId: stripeId,
       email: fbuser.email,
       type: 'member',
-      signedInWithFacebook: true,
       facebookAuthToken: longLivedToken.access_token,
       facebookUserId: fbuser.id,
       favorites: [],
@@ -124,13 +123,11 @@ export class FacebookController {
     const authResponse = await this.facebookService.getAccessToken(request.code, 'signin');
     const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token);
     const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
-
     const user = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
     if (!user) {
       throw new HttpErrors.BadRequest('No user is linked to this facebook account. Please log in first and then link your facebook account');
     }
 
-    user.signedInWithFacebook = true;
     user.facebookAuthToken = longLivedToken.access_token;
     user.facebookUserId = fbuser.id;
 
@@ -181,7 +178,6 @@ export class FacebookController {
         return { error: 'This facebook account is already linked with an existing user' };
       }
 
-      user.signedInWithFacebook = true;
       user.facebookAuthToken = longLivedToken.access_token;
       user.facebookUserId = fbuser.id;
 

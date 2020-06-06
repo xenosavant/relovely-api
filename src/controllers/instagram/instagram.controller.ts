@@ -65,9 +65,9 @@ export class InstagramController {
 
     if (existingUser) {
       if (existingUser.seller && existingUser.seller.approved) {
-        throw new HttpErrors.Conflict('That account is already linked to an existing seller');
+        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing seller');
       } else {
-        throw new HttpErrors.Conflict('The account linked to that Instagram is awaiting approval');
+        throw new HttpErrors.Conflict('The account linked to that Instagram is pending approval');
       }
     }
 
@@ -83,10 +83,9 @@ export class InstagramController {
       type: 'seller',
       username: data.username,
       email: data.email,
-      signedInWithFacebook: false,
       instagramAuthToken: longLivedToken.access_token,
       instagramUsername: data.username,
-      passwordVerificationCode: verficationCodeString,
+      emailVerificationCode: verficationCodeString,
       instagramUserId: profile.graphql.user.id,
       emailVerified: true,
       favorites: [],
@@ -108,7 +107,8 @@ export class InstagramController {
       stripeCustomerId: stripeId
     });
 
-    await this.sendGridService.sendEmail(user.email as string, `You're approved to sell!`,
-      `Click <a href="dev.relovely.com/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
+    // TODO: remove this in production
+    await this.sendGridService.sendEmail(user.email as string, `You're approved to sell on Relovely!`,
+      `Click <a href="dev.relovely.com/account/verify?type=seller&code=${encodeURI(verficationCodeString)}">here</a> to get started.`);
   }
 }

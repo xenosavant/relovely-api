@@ -12,5 +12,5 @@ export class SellerDetails {
   @property()
   address?: Address
   @property()
-  verified?: boolean;
+  approved?: boolean;
 }
