@@ -108,6 +108,7 @@ export class InstagramController {
       stripeCustomerId: stripeId
     });
 
-    await this.sendGridService.sendEmail(user.email as string, `You're approved to sell!`, `Click <a href="dev.relovely.com/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);)
+    await this.sendGridService.sendEmail(user.email as string, `You're approved to sell!`,
+      `Click <a href="dev.relovely.com/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
   }
 }
