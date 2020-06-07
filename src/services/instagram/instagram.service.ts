@@ -62,7 +62,7 @@ export class InstagramService {
     return { username: response.username, id: response };
   }
 
-  public async getUserProfile(username: string): Promise<boolean> {
+  public async checkForProfile(username: string): Promise<boolean> {
     const options = {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}?__a=1`
