@@ -5,7 +5,7 @@ import { AuthResponse } from "../../authentication/auth-response";
 import { AuthRequest } from "./auth-request";
 import { inject, service } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
-import { TokenService } from "@loopback/authentication";
+import { TokenService, authenticate } from "@loopback/authentication";
 import { AppCredentialService } from "../../services/authentication/credential.service";
 import { AppUserProfile } from "../../authentication/app-user-profile";
 import { SendgridService, InstagramService } from "../../services";
@@ -184,9 +184,7 @@ export class AuthController {
       throw new HttpErrors.Forbidden();
     }
 
-    user.emailVerified = true;
-    user.emailVerificationCode = undefined;
-    this.userRepository.save(user);
+    this.userRepository.updateById(user.id, { emailVerified: true, emailVerificationCode: undefined });
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
@@ -225,8 +223,7 @@ export class AuthController {
     const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
       verficationCodeString = verificationCode.digest('hex');
 
-    user.passwordVerificationCode = verficationCodeString;
-    await this.userRepository.save(user);
+    await this.userRepository.updateById(user.id, { passwordVerificationCode: verficationCodeString });
 
     await this.sendGridService.sendEmail(user.email as string,
       'Relovely - Reset Password',
@@ -268,9 +265,10 @@ export class AuthController {
 
     const hash = await this.credentialService.hashPassword(request.password);
 
-    user.passwordHash = hash;
-    user.passwordVerificationCode = undefined;
-    await this.userRepository.save(user);
+    await this.userRepository.updateById(user.id, {
+      passwordHash: hash,
+      passwordVerificationCode: undefined
+    });
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });

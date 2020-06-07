@@ -137,10 +137,10 @@ export class FacebookController {
       throw new HttpErrors.BadRequest('No user is linked to this facebook account. Please log in first and then link your facebook account');
     }
 
-    user.facebookAuthToken = longLivedToken.access_token;
-    user.facebookUserId = fbuser.id;
-
-    await this.userRepository.save(user);
+    await this.userRepository.updateById(user.id, {
+      facebookAuthToken: longLivedToken.access_token,
+      facebookUserId: fbuser.id
+    });
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'facebook' });

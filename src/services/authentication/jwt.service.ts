@@ -48,7 +48,7 @@ export class JWTService implements TokenService {
     return userProfile;
   }
 
-  async generateToken(userProfile: AppUserProfile): Promise<string> {
+  async generateToken(userProfile: AppUserProfile, expiration: | null = null): Promise<string> {
     if (!userProfile) {
       throw new HttpErrors.Unauthorized(
         'Error generating token: userProfile is null',
@@ -59,7 +59,7 @@ export class JWTService implements TokenService {
     let token: string;
     try {
       token = await signAsync(userProfile, this.jwtSecret, {
-        expiresIn: Number(this.jwtExpiresIn),
+        expiresIn: expiration || Number(this.jwtExpiresIn),
       });
     } catch (error) {
       throw new HttpErrors.Unauthorized(`Error encoding token: ${error}`);

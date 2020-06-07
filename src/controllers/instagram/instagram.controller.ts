@@ -88,6 +88,7 @@ export class InstagramController {
       email: request.email as string,
       instagramAuthToken: longLivedToken.access_token,
       instagramUsername: data.username,
+      emailVerificationCode: verficationCodeString,
       passwordVerificationCode: verficationCodeString,
       instagramUserId: data.id,
       emailVerified: false,
@@ -103,7 +104,7 @@ export class InstagramController {
       },
       seller: {
         verificationStatus: 'unverified',
-        missingInfo: ['external_acccount'],
+        missingInfo: ['external_account'],
         errors: [],
         approved: false
       },
