@@ -112,6 +112,6 @@ export class InstagramController {
 
     // TODO: remove this in production
     await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
-      `Click <a href="dev.relovely.com/account/verify?type=seller&code=${encodeURI(verficationCodeString)}">here</a> to get started.`);
+      `Click <a href="dev.relovely.com/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
   }
 }
