@@ -14,6 +14,7 @@ import { User, UserWithRelations } from "../../models";
 import { CloudinaryService } from "../../services";
 import * as fs from 'fs';
 import { StripeService } from '../../services/stripe/stripe.service';
+import { userDetailFields } from '../user/response/user-list.interface';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -170,7 +171,7 @@ export class FacebookController {
       },
     })
     request: OAuthRequest,
-  ): Promise<AuthResponse> {
+  ): Promise<User> {
 
     const authResponse = await this.facebookService.getAccessToken(request.code, 'link');
     const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
@@ -183,19 +184,14 @@ export class FacebookController {
       }
       const existingFacebookUser = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
       if (existingFacebookUser && existingFacebookUser.id !== user.id) {
-        return { error: 'This facebook account is already linked with an existing user' };
+        throw new HttpErrors.Conflict('This facebook account is already linked with an existing user');
       }
 
       user.facebookAuthToken = longLivedToken.access_token;
       user.facebookUserId = fbuser.id;
 
-      await this.userRepository.save(user);
-
-      const userProfile = {} as AppUserProfile;
-      Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'facebook' });
-
-      const jwt = await this.tokenService.generateToken(userProfile);
-      return { user: user, jwt: jwt };
+      await this.userRepository.updateById(user.id, { facebookAuthToken: longLivedToken.access_token, facebookUserId: fbuser.id });
+      return this.userRepository.findById(user.id, { fields: userDetailFields });
     } else {
       throw new HttpErrors.Forbidden;
     }

@@ -8,9 +8,9 @@ export interface UserList {
 }
 
 export const userDetailFields = {
-  instagramUsername: false, passwordHash: false, instagramAuthToken:
+  passwordHash: false, instagramAuthToken:
     false, instagramUserId: false, signedInWithInstagram: false,
-  facebookAuthToken: false, facebookUserId: false, emailVerificationCode: false,
+  facebookAuthToken: false, emailVerificationCode: false,
   passwordVerificationCode: false
 };
 
