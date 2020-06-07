@@ -68,7 +68,7 @@ export class AuthController {
       throw new HttpErrors.Conflict('Username already exists');
     }
 
-    const instaUser = await this.instagramService.getUserProfile(request.username);
+    const instaUser = await this.instagramService.checkForProfile(request.username);
     if (instaUser) {
       throw new HttpErrors.Conflict('Username already exists on Instagram');
     }
