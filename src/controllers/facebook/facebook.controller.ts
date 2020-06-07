@@ -178,7 +178,7 @@ export class FacebookController {
     const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
     if (fbuser) {
       const profile = this.user;
-      const user = await this.userRepository.findOne({ where: { username: profile.username } });
+      const user = await this.userRepository.findById(profile.id);
       if (!user) {
         throw new HttpErrors.Forbidden;
       }
