@@ -59,7 +59,6 @@ export class InstagramController {
     const authResponse = await this.instagramService.getAccessToken(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
     const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
-    const isUser = await this.instagramService.getUserProfile(data.username);
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
 
     if (existingUser) {
@@ -91,7 +90,7 @@ export class InstagramController {
       instagramUsername: data.username,
       emailVerificationCode: verficationCodeString,
       instagramUserId: data.id,
-      emailVerified: true,
+      emailVerified: false,
       favorites: [],
       followers: [],
       following: [],

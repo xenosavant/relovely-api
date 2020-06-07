@@ -195,14 +195,15 @@ export class UserController {
       }
       if (key === 'username') {
         const username = updates['username'] as string;
-        const existingUsername = await this.userRepository.findOne({ where: { username: username } });
-        if (existingUsername && existingUsername.username !== user.username) {
-          throw new HttpErrors.Conflict('Username already exists');
-        }
-
-        const instaUser = await this.instagramService.getUserProfile(username);
-        if (instaUser) {
-          throw new HttpErrors.Conflict('Username already exists on Instagram');
+        if (updates['username'] !== user.username) {
+          const existingUsername = await this.userRepository.findOne({ where: { username: username } });
+          if (existingUsername) {
+            throw new HttpErrors.Conflict('Username already exists');
+          }
+          const instaUser = await this.instagramService.checkForProfile(username);
+          if (instaUser) {
+            throw new HttpErrors.Conflict('Username already exists on Instagram');
+          }
         }
       }
     }
