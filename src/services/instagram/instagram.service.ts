@@ -72,7 +72,7 @@ export class InstagramService {
     let result: boolean;
     try {
       let response = await client(options);
-      if (response.statuscode === 404) {
+      if (response.statusCode === 404) {
         result = false;
       } else {
         result = true;

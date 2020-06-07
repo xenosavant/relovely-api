@@ -34,14 +34,14 @@ export class InstagramController {
     @service(SendgridService)
     public sendGridService: SendgridService) { }
 
-  @post('/instagram/signup', {
+  @post('/instagram/sell', {
     responses: {
       '204': {
         description: 'Success'
       },
     },
   })
-  async signup(
+  async sell(
     @requestBody({
       content: {
         'application/json': {
@@ -114,5 +114,82 @@ export class InstagramController {
     // TODO: remove this in production
     await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
       `Click <a href="dev.relovely.com/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
+  }
+
+
+  @post('/instagram/signup', {
+    responses: {
+      '204': {
+        description: 'Success'
+      },
+    },
+  })
+  async signup(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(OAuthRequest),
+        },
+      },
+    })
+    request: OAuthRequest,
+  ): Promise<void> {
+
+    if (!request.email) {
+      throw new HttpErrors.BadRequest('Email is required');
+    }
+
+    const authResponse = await this.instagramService.getAccessToken(request.code);
+    const data = await this.instagramService.getBasicUserData(authResponse.access_token);
+    const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
+    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+    if (existingUser) {
+      if (existingUser.seller && existingUser.seller.approved) {
+        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing seller');
+      } else {
+        throw new HttpErrors.Conflict('The account linked to that Instagram is pending approval');
+      }
+    }
+
+    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
+
+    if (existingEmail) {
+      throw new HttpErrors.Conflict('That email is not available.');
+    }
+
+    const stripeId = await this.stripeService.createCustomer(request.email as string);
+
+    const rand = Math.random().toString();
+    const now = new Date();
+    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+      verficationCodeString = verificationCode.digest('hex');
+
+    const user = await this.userRepository.create({
+      type: 'member',
+      username: data.username,
+      email: request.email as string,
+      instagramAuthToken: longLivedToken.access_token,
+      instagramUsername: data.username,
+      emailVerificationCode: verficationCodeString,
+      passwordVerificationCode: verficationCodeString,
+      instagramUserId: data.id,
+      emailVerified: false,
+      favorites: [],
+      followers: [],
+      following: [],
+      addresses: [],
+      cards: [],
+      preferences: {
+        sizes: [],
+        colors: [],
+        prices: []
+      },
+      stripeCustomerId: stripeId
+    });
+
+    // TODO: remove this in production
+    await this.sendGridService.sendEmail(user.email as string, `Welcome to Relovely!`,
+      `Click <a href="dev.relovely.com/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
   }
 }
