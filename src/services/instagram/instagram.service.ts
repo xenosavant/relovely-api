@@ -65,13 +65,18 @@ export class InstagramService {
   public async checkForProfile(username: string): Promise<boolean> {
     const options = {
       method: 'GET',
-      uri: `${this.instagramUrl}/${username}?__a=1`
+      uri: `${this.instagramUrl}/${username}?__a=1`,
+      resolveWithFullResponse: true
       // headers: { 'Accept': 'application/json' }
     }
     let result: boolean;
     try {
       let response = await client(options);
-      result = true;
+      if (response.statuscode === 404) {
+        result = false;
+      } else {
+        result = true;
+      }
     } catch {
       result = false;
     }
