@@ -63,9 +63,7 @@ export class InstagramController {
 
     if (existingUser) {
       if (existingUser.seller && existingUser.seller.approved) {
-        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing seller');
-      } else {
-        throw new HttpErrors.Conflict('The account linked to that Instagram is pending approval');
+        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
       }
     }
 
@@ -145,11 +143,7 @@ export class InstagramController {
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
 
     if (existingUser) {
-      if (existingUser.seller && existingUser.seller.approved) {
-        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing seller');
-      } else {
-        throw new HttpErrors.Conflict('The account linked to that Instagram is pending approval');
-      }
+      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
     }
 
     const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
