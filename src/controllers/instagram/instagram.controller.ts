@@ -56,7 +56,7 @@ export class InstagramController {
       throw new HttpErrors.BadRequest('Email is required');
     }
 
-    const authResponse = await this.instagramService.getAccessToken(request.code);
+    const authResponse = await this.instagramService.getAccessTokenSeller(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
     const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
@@ -139,7 +139,7 @@ export class InstagramController {
       throw new HttpErrors.BadRequest('Email is required');
     }
 
-    const authResponse = await this.instagramService.getAccessToken(request.code);
+    const authResponse = await this.instagramService.getAccessTokenMember(request.code);
     const data = await this.instagramService.getBasicUserData(authResponse.access_token);
     const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;

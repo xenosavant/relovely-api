@@ -70,7 +70,7 @@ export class AuthController {
 
     const instaUser = await this.instagramService.checkForProfile(request.username);
     if (instaUser) {
-      throw new HttpErrors.Conflict('Username already exists on Instagram');
+      throw new HttpErrors.Conflict('Username already exists on Instagram. Click the button below to sign up with Instagram.');
     }
 
     const hash = await this.credentialService.hashPassword(request.password);
