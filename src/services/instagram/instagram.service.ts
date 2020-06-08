@@ -76,7 +76,7 @@ export class InstagramService {
       headers: { 'Content-Type': 'application/json' }
     }
     const response = JSON.parse(await client(options));
-    return { username: response.username, id: response };
+    return { username: response.username, id: response.id };
   }
 
   public async checkForProfile(username: string): Promise<boolean> {
