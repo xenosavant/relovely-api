@@ -8,5 +8,5 @@ export class AuthResponse {
   @property()
   jwt?: string;
   @property()
-  error?: string;
+  existing?: boolean;
 }
