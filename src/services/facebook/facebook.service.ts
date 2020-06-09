@@ -26,7 +26,7 @@ export class FacebookService {
 
   public async getAccessToken(code: string, type: 'signin' | 'signup' | 'link'): Promise<AuthData> {
     let redirect_uri: string = this.redirectUri;
-    if (type) {
+    if (type === 'link') {
       redirect_uri = `${redirect_uri}?type=${type}`;
     }
     const options = {

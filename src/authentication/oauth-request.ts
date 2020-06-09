@@ -8,6 +8,4 @@ export class OAuthRequest {
   password?: string;
   @property()
   email?: string;
-  @property()
-  existing?: boolean;
 }

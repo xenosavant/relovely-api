@@ -90,7 +90,12 @@ export class FacebookController {
         favorites: [],
         following: [],
         addresses: [],
-        cards: []
+        cards: [],
+        preferences: {
+          sizes: [],
+          colors: [],
+          prices: []
+        }
       });
       const prefix = 'data:image/jpeg;base64,';
       let imageBuffer = Buffer.from(picture);
