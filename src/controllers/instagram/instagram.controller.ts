@@ -15,6 +15,8 @@ import { StripeService } from '../../services/stripe/stripe.service';
 import * as crypto from 'crypto'
 import { BasicData } from '../../services/response/basic-data';
 import { InstagramTokenResponse } from './instagram-token.response';
+import { InstagramTokenRequest } from './instagram-token.request';
+import { AuthData } from '../../services/response/auth-data';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -213,15 +215,20 @@ export class InstagramController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(OAuthRequest),
+          schema: getModelSchemaRef(InstagramTokenRequest),
         },
       },
     })
-    request: OAuthRequest,
+    request: InstagramTokenRequest,
   ): Promise<InstagramTokenResponse> {
 
     try {
-      const authResponse = await this.instagramService.getAccessTokenMember(request.code);
+      let authResponse: AuthData;
+      if (request.type === 'member') {
+        authResponse = await this.instagramService.getAccessTokenMember(request.token);
+      } else {
+        authResponse = await this.instagramService.getAccessTokenSeller(request.token);
+      }
       const data = await this.instagramService.getBasicUserData(authResponse.access_token);
       const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
       const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
@@ -233,7 +240,7 @@ export class InstagramController {
       return { token: longLivedToken.access_token, username: data.username };
 
     }
-    catch {
+    catch (error) {
       throw new HttpErrors.BadRequest('Invalid account.')
     }
   }
