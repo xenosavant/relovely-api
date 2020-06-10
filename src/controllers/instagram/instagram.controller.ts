@@ -17,6 +17,7 @@ import { BasicData } from '../../services/response/basic-data';
 import { InstagramTokenResponse } from './instagram-token.response';
 import { InstagramTokenRequest } from './instagram-token.request';
 import { AuthData } from '../../services/response/auth-data';
+import { LongLivedTokenData } from '../../services/response/long-lived-token-data';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -222,6 +223,8 @@ export class InstagramController {
     request: InstagramTokenRequest,
   ): Promise<InstagramTokenResponse> {
 
+    let data: BasicData,
+      longLivedToken: LongLivedTokenData;
     try {
       let authResponse: AuthData;
       if (request.type === 'member') {
@@ -229,19 +232,19 @@ export class InstagramController {
       } else {
         authResponse = await this.instagramService.getAccessTokenSeller(request.token);
       }
-      const data = await this.instagramService.getBasicUserData(authResponse.access_token);
-      const longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
-      const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
-
-      if (existingUser) {
-        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
-      }
-
-      return { token: longLivedToken.access_token, username: data.username };
-
+      data = await this.instagramService.getBasicUserData(authResponse.access_token);
+      longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     }
     catch (error) {
       throw new HttpErrors.BadRequest('Invalid account.')
     }
+    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+    if (existingUser) {
+      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+    }
+
+    return { token: longLivedToken.access_token, username: data.username };
+
   }
 }
