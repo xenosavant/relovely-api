@@ -88,16 +88,12 @@ export class InstagramService {
       // headers: { 'Accept': 'application/json' }
     }
     let result: boolean;
-    try {
-      let response = await client(options);
-      throw new HttpErrors.Conflict(response);
-      if (response.statusCode === 404) {
-        result = false;
-      } else {
-        result = true;
-      }
-    } catch {
+    let response = await client(options);
+    throw new HttpErrors.Conflict(response);
+    if (response.statusCode === 404) {
       result = false;
+    } else {
+      result = true;
     }
     return result;
   }
