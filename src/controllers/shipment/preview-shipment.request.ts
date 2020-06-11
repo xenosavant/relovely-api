@@ -13,4 +13,6 @@ export class PreviewShipmentRequest {
   price: number;
   @property()
   sellerId: string
+  @property()
+  categoryId: string
 }

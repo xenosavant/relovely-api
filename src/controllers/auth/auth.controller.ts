@@ -103,7 +103,7 @@ export class AuthController {
 
     await this.sendGridService.sendEmail(request.email,
       'Welcome To Relovely!',
-      `Click <a href="dev.relovely.com/account/verify?type=email&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
+      `Click <a href="dev.relovely.com/account/verify?type=member&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
   }
 
   @post('auth/signin', {

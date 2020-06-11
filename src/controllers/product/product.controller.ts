@@ -29,6 +29,7 @@ import { authenticate } from '@loopback/authentication';
 import { SecurityBindings } from '@loopback/security';
 import { inject } from '@loopback/core';
 import { AppUserProfile } from '../../authentication/app-user-profile';
+import { request } from 'http';
 
 export class ProductController {
   constructor(
@@ -74,14 +75,28 @@ export class ProductController {
     @param.query.string('sizes') sizes?: string,
     @param.query.string('colors') colors?: string,
     @param.query.string('prices') prices?: string,
+    @param.query.string('terms') terms?: string,
   ): Promise<ListResponse<ProductWithRelations>> {
     const where: Where<Product> = {
       and: [
         { sold: false },
         { active: true },
-        { categories: { regexp: `^${category}$` } }
       ]
     };
+
+    if (terms) {
+      const termsArray = terms.split(',');
+      termsArray.forEach(term => {
+        where.and.push({
+          or: [{ title: { regexp: `/${term}/i` } },
+          { tags: { regexp: `/^${term}/i` } }]
+        });
+      })
+    }
+
+    if (category !== '0') {
+      where.and.push({ categories: { regexp: `^${category}$` } });
+    }
 
     let priceArray;
     if (prices) {

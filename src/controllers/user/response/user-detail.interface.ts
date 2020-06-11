@@ -18,4 +18,6 @@ export interface UserDetail {
   favorites?: Product[];
   type: string;
   averageRating?: number;
+  city?: string;
+  state?: string;
 }

@@ -200,7 +200,8 @@ export class OrderController {
       fromAddress: request.fromAddress as Address,
       shippingCost: shipment.shippingRate,
       price: request.price,
-      sellerId: seller.id as string
+      sellerId: seller.id as string,
+      categoryId: request.categoryId
     })
     return { ...shipment, taxRate: taxRate.tax }
   }

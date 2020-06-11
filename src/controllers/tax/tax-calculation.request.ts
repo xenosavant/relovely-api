@@ -13,4 +13,6 @@ export class TaxCalculationRequest {
   price: number;
   @property()
   sellerId: string;
+  @property()
+  categoryId: string
 }

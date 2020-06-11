@@ -158,6 +158,8 @@ export class UserController {
 
     response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
     response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
+    response.city = (response.seller && response.seller.address) ? response.seller.address.city : null;
+    response.state = (response.seller && response.seller.address) ? response.seller.address.state : null;
     delete response.products;
 
     const detailResponse = { ...response } as UserDetail;
@@ -218,6 +220,7 @@ export class UserController {
         description: 'successful update',
       },
     },
+
   })
   async follow(
     @param.path.string('id') id: string,

@@ -184,7 +184,6 @@ export class InstagramController {
       instagramAuthToken: longLivedToken,
       instagramUsername: data.username,
       emailVerificationCode: verficationCodeString,
-      passwordVerificationCode: verficationCodeString,
       instagramUserId: data.id,
       emailVerified: false,
       favorites: [],
