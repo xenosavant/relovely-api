@@ -83,8 +83,8 @@ export class InstagramService {
     const options = {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}`,
-      resolveWithFullResponse: true
-      // headers: { 'Accept': 'application/json' }
+      resolveWithFullResponse: true,
+      headers: { 'Accept': 'application/json' }
     }
     let result: boolean = false;
     try {
@@ -92,7 +92,7 @@ export class InstagramService {
       if (response.statusCode === 404) {
         result = false;
       } else if (response.statusCode === 200) {
-        const regex = new RegExp(`/@${username}/`, 'g');
+        const regex = new RegExp(`@${username}`, 'g');
         if (regex.test(response.body)) {
           result = true;
         } else {
