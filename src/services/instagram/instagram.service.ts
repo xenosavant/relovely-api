@@ -88,20 +88,20 @@ export class InstagramService {
       // headers: { 'Accept': 'application/json' }
     }
     let result: boolean = false;
-    try {
-      let response = await client(options);
-      throw new HttpErrors.Conflict(response.body);
-      if (response.statusCode === 200) {
-        const regex = /Page Not Found/g;
-        if (regex.test(response.body)) {
-          result = false;
-        } else {
-          result = true;
-        }
+    // try {
+    let response = await client(options);
+    throw new HttpErrors.Conflict(response.body);
+    if (response.statusCode === 200) {
+      const regex = /Page Not Found/g;
+      if (regex.test(response.body)) {
+        result = false;
+      } else {
+        result = true;
       }
-    } catch {
-      result = false;
     }
+    // } catch {
+    //   result = false;
+    // }
     return result;
   }
 }
