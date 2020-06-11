@@ -84,21 +84,21 @@ export class InstagramService {
     const options = {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}`,
-      resolveWithFullResponse: true
-      // headers: { 'Accept': 'application/json' }
+      resolveWithFullResponse: true,
+      headers: { 'Accept': 'application/json' }
     }
     let result: boolean;
-    try {
-      let response = await client(options);
-      throw new HttpErrors.Conflict(response.statusCode);
-      if (response.statusCode === 404) {
-        result = false;
-      } else {
-        result = true;
-      }
-    } catch {
+    // try {
+    let response = await client(options);
+    throw new HttpErrors.Conflict(response.statusCode);
+    if (response.statusCode === 404) {
       result = false;
+    } else {
+      result = true;
     }
+    // } catch {
+    //   result = false;
+    // }
     return result;
   }
 }
