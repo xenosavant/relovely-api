@@ -6,7 +6,6 @@ import { LongLivedTokenData } from '../response/long-lived-token-data';
 import { REFUSED } from 'dns';
 import { TokenServiceBindings } from '../../keys/token-service.bindings';
 import { TokenService } from '@loopback/authentication';
-import { HttpErrors } from '@loopback/rest';
 const client = require('request-promise');
 
 @bind({ scope: BindingScope.CONTEXT })
@@ -84,21 +83,23 @@ export class InstagramService {
     const options = {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}`,
-      resolveWithFullResponse: true,
-      headers: { 'Accept': 'application/json' }
+      resolveWithFullResponse: true
+      // headers: { 'Accept': 'application/json' }
     }
-    let result: boolean;
-    // try {
-    let response = await client(options);
-    throw new HttpErrors.Conflict(response.statusCode);
-    if (response.statusCode === 404) {
+    let result: boolean = false;
+    try {
+      let response = await client(options);
+      if (response.statusCode === 200) {
+        const regex = /Page Not Found/g;
+        if (regex.test(response.body)) {
+          result = false;
+        } else {
+          result = true;
+        }
+      }
+    } catch {
       result = false;
-    } else {
-      result = true;
     }
-    // } catch {
-    //   result = false;
-    // }
     return result;
   }
 }
