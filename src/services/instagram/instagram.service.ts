@@ -84,8 +84,8 @@ export class InstagramService {
     const options = {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}?__a=1`,
-      resolveWithFullResponse: true
-      // headers: { 'Accept': 'application/json' }
+      resolveWithFullResponse: true,
+      headers: { 'Accept': 'application/json' }
     }
     let result: boolean;
     let response = await client(options);
