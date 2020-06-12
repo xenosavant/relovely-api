@@ -4,4 +4,6 @@ import { model, property } from '@loopback/repository';
 export class TaxCalculationResponse {
   @property()
   tax: number;
+  @property()
+  error?: string;
 }

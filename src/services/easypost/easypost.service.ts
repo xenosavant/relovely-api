@@ -45,8 +45,7 @@ export class EasyPostService {
           }
         } else {
           resolve({
-            success: false,
-            errors: result.errors.map((e: any) => e.message)
+            success: false
           });
         }
       })
@@ -91,6 +90,8 @@ export class EasyPostService {
           shippingRate: parseFloat(rate.rate) * 100,
           shipmentId: result.id
         });
+      }, (error: any) => {
+        reject();
       })
     })
   }

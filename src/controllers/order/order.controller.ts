@@ -82,7 +82,7 @@ export class OrderController {
         await this.productRepository.update(product);
         const card = buyer.cards.find(c => c.stripeId === request.paymentId);
 
-        return await this.productRepository.order(id).create({
+        const order = await this.productRepository.order(id).create({
           sellerId: product.sellerId,
           buyerId: this.user.id as string,
           purchaseDate: moment.utc().toDate(),
@@ -101,6 +101,30 @@ export class OrderController {
           paymentType: card?.type,
           orderNumber: await this.generateOrderNumber()
         });
+        const taxTransaction = await this.taxService.createTransaction({
+          order: {
+            transaction_id: order.id,
+            transaction_date: moment().toDate(),
+            to_country: request.address.country,
+            to_zip: request.address.zip,
+            to_state: request.address.state,
+            to_city: request.address.city,
+            to_street: request.address.line1,
+            amount: (product.price / 100).toFixed(2),
+            shipping: (order.shippingCost as number / 100).toFixed(2),
+            sales_tax: (order.tax as number / 100).toFixed(2),
+            line_items: [
+              {
+                quantity: 1,
+                product_identifier: product.id,
+                description: product.title,
+                unit_price: (product.price / 100).toFixed(2),
+                sales_tax: (order.tax as number / 100).toFixed(2)
+              }
+            ]
+          }
+        });
+        return order;
       } else {
         throw new HttpErrors.BadRequest('Charge was declined');
       }
@@ -203,6 +227,9 @@ export class OrderController {
       sellerId: seller.id as string,
       categoryId: request.categoryId
     })
+    if (taxRate.error) {
+      throw new HttpErrors.BadRequest('Something went wrong...please refresh the page');
+    }
     return { ...shipment, taxRate: taxRate.tax }
   }
 

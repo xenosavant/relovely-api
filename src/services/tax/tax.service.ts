@@ -1,7 +1,9 @@
 import { BindingScope, bind } from '@loopback/core';
-import { TaxCalculationResponse } from '../../controllers/tax/tax-calculation.response';
-import { TaxCalculationRequest } from '../../controllers/tax/tax-calculation.request';
+import { TaxCalculationResponse } from './tax-calculation.response';
+import { TaxCalculationRequest } from './tax-calculation.request';
 import { resolve } from 'dns';
+import { HttpErrors } from '@loopback/rest';
+import { TaxTranactionRequest } from './tax-tranasaction.repsonse';
 
 const Taxjar = require('taxjar');
 
@@ -25,9 +27,9 @@ export class TaxService {
         from_address: request.fromAddress.city,
         to_country: 'US',
         to_zip: request.toAddress.zip,
-        to_state: request.fromAddress.state,
-        to_city: request.fromAddress.city,
-        to_street: request.fromAddress.line1,
+        to_state: request.toAddress.state,
+        to_city: request.toAddress.city,
+        to_street: request.toAddress.line1,
         amount: request.price / 100,
         shipping: request.shippingCost / 100,
         line_items: [
@@ -43,9 +45,19 @@ export class TaxService {
         taxRequest.line_items[0].product_tax_code = TAX_CODE;
       }
       client.taxForOrder(taxRequest).then((tax: any) => {
-        resolve({ tax: tax.tax.amount_to_collect * 100 })
+        resolve({ tax: tax.tax.amount_to_collect * 100 });
       }, (error: any) => {
-        reject();
+        resolve({ tax: 0, error: error.detail });
+      })
+    })
+  }
+
+  createTransaction(request: TaxTranactionRequest): Promise<TaxCalculationResponse> {
+    return new Promise((resolve, reject) => {
+      client.createOrder(request).then((response: any) => {
+        resolve({ tax: response.order.sales_tax });
+      }, (error: any) => {
+        resolve({ tax: 0, error: error.detail })
       })
     })
   }

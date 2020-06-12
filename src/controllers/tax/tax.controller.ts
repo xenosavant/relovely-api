@@ -3,11 +3,10 @@ import { repository } from '@loopback/repository';
 import { OrderRepository } from '../../repositories';
 import { service } from '@loopback/core';
 import { TaxService } from '../../services/tax/tax.service';
-import { TaxCalculationResponse } from './tax-calculation.response';
-import { TaxCalculationRequest } from './tax-calculation.request';
+import { TaxCalculationResponse } from '../../services/tax/tax-calculation.response';
+import { TaxCalculationRequest } from '../../services/tax/tax-calculation.request';
 import { authenticate } from '@loopback/authentication';
 import { post, getModelSchemaRef, requestBody } from '@loopback/rest';
-import { AddressVerification } from '../../services/easypost/address-verification';
 
 
 export class TaxController {
