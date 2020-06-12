@@ -214,7 +214,7 @@ export class InstagramController {
       },
     },
   })
-  async token(
+  async link(
     @requestBody({
       content: {
         'application/json': {
@@ -229,7 +229,7 @@ export class InstagramController {
       longLivedToken: LongLivedTokenData;
     try {
       let authResponse: AuthData;
-      authResponse = await this.instagramService.getAccessToken(request.code);
+      authResponse = await this.instagramService.getAccessTokenLink(request.token);
       data = await this.instagramService.getBasicUserData(authResponse.access_token);
       longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     }
@@ -250,6 +250,50 @@ export class InstagramController {
     });
 
     return await this.userRepository.findById(this.user.id);
+
+  }
+
+
+  @post('/instagram/token', {
+    responses: {
+      '204': {
+        description: 'Success'
+      },
+    },
+  })
+  async token(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(InstagramTokenRequest),
+        },
+      },
+    })
+    request: InstagramTokenRequest,
+  ): Promise<InstagramTokenResponse> {
+
+    let data: BasicData,
+      longLivedToken: LongLivedTokenData;
+    try {
+      let authResponse: AuthData;
+      if (request.type === 'member') {
+        authResponse = await this.instagramService.getAccessTokenMember(request.token);
+      } else {
+        authResponse = await this.instagramService.getAccessTokenSeller(request.token);
+      }
+      data = await this.instagramService.getBasicUserData(authResponse.access_token);
+      longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
+    }
+    catch (error) {
+      throw new HttpErrors.BadRequest('Invalid account.')
+    }
+    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+    if (existingUser) {
+      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+    }
+
+    return { token: longLivedToken.access_token, username: data.username };
 
   }
 }

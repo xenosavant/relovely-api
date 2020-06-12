@@ -3,7 +3,7 @@ import { TaxCalculationResponse } from './tax-calculation.response';
 import { TaxCalculationRequest } from './tax-calculation.request';
 import { resolve } from 'dns';
 import { HttpErrors } from '@loopback/rest';
-import { TaxTranactionRequest } from './tax-tranasaction.repsonse';
+import { TaxTranactionRequest } from './tax-transaction.request';
 
 const Taxjar = require('taxjar');
 
