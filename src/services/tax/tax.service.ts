@@ -6,7 +6,8 @@ import { resolve } from 'dns';
 const Taxjar = require('taxjar');
 
 const client = new Taxjar({
-  apiKey: process.env.TAXJAR_API_KEY
+  apiKey: process.env.TAXJAR_API_KEY,
+  apiUrl: Taxjar.SANDBOX_API_URL
 });
 
 const TAX_CODE = '20010';
@@ -41,8 +42,10 @@ export class TaxService {
       if (['11', '12', '21', '22'].includes(request.categoryId)) {
         taxRequest.line_items[0].product_tax_code = TAX_CODE;
       }
-      client.taxForOrder().then((tax: any) => {
+      client.taxForOrder(taxRequest).then((tax: any) => {
         resolve({ tax: tax.tax.amount_to_collect * 100 })
+      }, (error: any) => {
+        reject();
       })
     })
   }

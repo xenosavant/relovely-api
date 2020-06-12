@@ -5,7 +5,7 @@ import { UserRepository } from "../../repositories";
 import { InstagramService, SendgridService } from "../../services";
 import { service, inject } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
-import { TokenService } from "@loopback/authentication";
+import { TokenService, authenticate } from "@loopback/authentication";
 import { AuthResponse } from '../../authentication/auth-response';
 import { userDetailFields } from "../user/response/user-list.interface";
 import { AppUserProfile } from "../../authentication/app-user-profile";
@@ -18,6 +18,7 @@ import { InstagramTokenResponse } from './instagram-token.response';
 import { InstagramTokenRequest } from './instagram-token.request';
 import { AuthData } from '../../services/response/auth-data';
 import { LongLivedTokenData } from '../../services/response/long-lived-token-data';
+import { SecurityBindings } from '@loopback/security';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -37,7 +38,8 @@ export class InstagramController {
     @service(StripeService)
     public stripeService: StripeService,
     @service(SendgridService)
-    public sendGridService: SendgridService) { }
+    public sendGridService: SendgridService,
+    @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile, ) { }
 
   @post('/instagram/sell', {
     responses: {
@@ -204,7 +206,8 @@ export class InstagramController {
       `Click <a href="dev.relovely.com/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
   }
 
-  @post('/instagram/token', {
+  @authenticate('jwt')
+  @post('/instagram/link', {
     responses: {
       '204': {
         description: 'Success'
@@ -220,30 +223,33 @@ export class InstagramController {
       },
     })
     request: InstagramTokenRequest,
-  ): Promise<InstagramTokenResponse> {
+  ): Promise<User> {
 
     let data: BasicData,
       longLivedToken: LongLivedTokenData;
     try {
       let authResponse: AuthData;
-      if (request.type === 'member') {
-        authResponse = await this.instagramService.getAccessTokenMember(request.token);
-      } else {
-        authResponse = await this.instagramService.getAccessTokenSeller(request.token);
-      }
+      authResponse = await this.instagramService.getAccessToken(request.code);
       data = await this.instagramService.getBasicUserData(authResponse.access_token);
       longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     }
     catch (error) {
       throw new HttpErrors.BadRequest('Invalid account.')
     }
+
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
 
     if (existingUser) {
       throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
     }
 
-    return { token: longLivedToken.access_token, username: data.username };
+    const profile = this.user;
+    await this.userRepository.updateById(this.user.id, {
+      instagramAuthToken: longLivedToken.access_token,
+      instagramUsername: data.username
+    });
+
+    return await this.userRepository.findById(this.user.id);
 
   }
 }

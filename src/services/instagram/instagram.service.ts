@@ -27,7 +27,7 @@ export class InstagramService {
     this.signupRedirectUri = process.env.INSTAGRAM_AUTH_REDIRECT_URI as string;
   }
 
-  public async getAccessTokenMember(code: string): Promise<AuthData> {
+  public async getAccessToken(code: string): Promise<AuthData> {
     const options = {
       method: 'POST',
       uri: this.authenticationUrl,
@@ -36,24 +36,7 @@ export class InstagramService {
         code: code,
         client_id: this.appId,
         client_secret: this.appSecret,
-        redirect_uri: this.signupRedirectUri + '/member',
-        grant_type: 'authorization_code'
-      }
-    }
-    const response = JSON.parse(await client(options));
-    return response;
-  }
-
-  public async getAccessTokenSeller(code: string): Promise<AuthData> {
-    const options = {
-      method: 'POST',
-      uri: this.authenticationUrl,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      form: {
-        code: code,
-        client_id: this.appId,
-        client_secret: this.appSecret,
-        redirect_uri: this.signupRedirectUri + '/seller',
+        redirect_uri: this.signupRedirectUri,
         grant_type: 'authorization_code'
       }
     }
@@ -79,29 +62,29 @@ export class InstagramService {
     return { username: response.username, id: response.id };
   }
 
-  public async checkForProfile(username: string): Promise<boolean> {
-    const options = {
-      method: 'GET',
-      uri: `${this.instagramUrl}/${username}`,
-      resolveWithFullResponse: true,
-      headers: { 'Accept': 'application/json' }
-    }
-    let result: boolean = false;
-    try {
-      let response = await client(options);
-      if (response.statusCode === 404) {
-        result = false;
-      } else if (response.statusCode === 200) {
-        const regex = new RegExp(`@${username}`, 'g');
-        if (regex.test(response.body)) {
-          result = true;
-        } else {
-          result = false;
-        }
-      }
-    } catch {
-      result = false;
-    }
-    return result;
-  }
+  // public async checkForProfile(username: string): Promise<boolean> {
+  //   const options = {
+  //     method: 'GET',
+  //     uri: `${this.instagramUrl}/${username}`,
+  //     resolveWithFullResponse: true,
+  //     headers: { 'Accept': 'application/json' }
+  //   }
+  //   let result: boolean = false;
+  //   try {
+  //     let response = await client(options);
+  //     if (response.statusCode === 404) {
+  //       result = false;
+  //     } else if (response.statusCode === 200) {
+  //       const regex = new RegExp(`@${username}`, 'g');
+  //       if (regex.test(response.body)) {
+  //         result = true;
+  //       } else {
+  //         result = false;
+  //       }
+  //     }
+  //   } catch {
+  //     result = false;
+  //   }
+  //   return result;
+  // }
 }

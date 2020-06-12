@@ -202,10 +202,6 @@ export class UserController {
           if (existingUsername) {
             throw new HttpErrors.Conflict('Username already exists');
           }
-          const instaUser = await this.instagramService.checkForProfile(username);
-          if (instaUser) {
-            throw new HttpErrors.Conflict('Username already exists on Instagram');
-          }
         }
       }
     }
