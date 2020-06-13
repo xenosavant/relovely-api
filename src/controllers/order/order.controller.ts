@@ -109,7 +109,7 @@ export class OrderController {
           to_state: request.address.state,
           to_city: request.address.city,
           to_street: request.address.line1,
-          amount: (product.price / 100),
+          amount: (product.price / 100) + (order.shippingCost as number / 100),
           shipping: (order.shippingCost as number / 100),
           sales_tax: (order.tax as number / 100),
           line_items: [
