@@ -186,6 +186,41 @@ export class ProductController {
   }
 
   @authenticate('jwt')
+  @get('/products/listings', {
+    responses: {
+      '200': {
+        description: 'Array of Product model instances',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: getModelSchemaRef(Product, { includeRelations: true }),
+            },
+          },
+        },
+      },
+    },
+  })
+  async listings(
+  ): Promise<ListResponse<ProductWithRelations>> {
+    const me = await this.userRepository.findById(this.user.id, { fields: { type: true } });
+    if (!me || me.type !== 'seller') {
+      throw new HttpErrors.Forbidden('Invalid seller');
+    }
+    const products = await this.productRepository.find({
+      where: {
+        sellerId: this.user.id
+      }, order: ['sold ASC'],
+      include: [{ relation: 'seller', scope: { fields: userListFields } }]
+    });
+    return {
+      count: products.length,
+      items: products
+    }
+  }
+
+
+  @authenticate('jwt')
   @post('/users/{id}/products', {
     responses: {
       '200': {
