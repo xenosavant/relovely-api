@@ -22,8 +22,9 @@ import { StripeService } from '../../services/stripe/stripe.service';
 
 
 export class AuthController {
-  constructor(@repository(UserRepository)
-  public userRepository: UserRepository,
+  constructor(
+    @repository(UserRepository)
+    public userRepository: UserRepository,
     @inject('services.AppCredentialService')
     public credentialService: AppCredentialService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
