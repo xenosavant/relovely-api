@@ -102,23 +102,22 @@ export class InstagramService {
       method: 'GET',
       uri: `${this.instagramUrl}/${username}/?__a=1`,
       resolveWithFullResponse: true,
-      headers: { 'Accept': 'application/json' }
+      headers: { 'cookie': `ig_did=${process.env.INSTAGRAM_IG}; mid=${process.env.INSTAGRAM_MID}; rur=FRC; csrftoken=${process.env.INSTAGRAM_CSRF}; ds_user_id=12485442097; sessionid=${process.env.INSAGRAM_SESSIONID}; shbid=13778; shbts=1592158631.7574918; urlgen="{\"108.5.129.214\": 701\054 \"72.76.138.60\": 701}:1jkXC8:-NC0LG0Xap8_UZK6rIFldNygyGs` },
     }
     let result: boolean = false;
-    // try {
-    let response = await client(options);
-    throw new HttpErrors.BadRequest(response.statusCode.toString() + ' ' + response.body.toString());
-    if (response.statusCode === 404) {
-      result = true;
-    } else if (response.statusCode === 200) {
-      const regex = new RegExp(`@${username}`, 'g');
-      if (regex.test(response.body)) {
+    try {
+      let response = await client(options);
+      if (response.statusCode === 404) {
         result = true;
+      } else if (response.statusCode === 200) {
+        const regex = new RegExp(`@${username}`, 'g');
+        if (regex.test(response.body)) {
+          result = true;
+        }
       }
+    } catch (error) {
+      result = true;
     }
-    // } catch (error) {
-    //   result = true;
-    // }
     return result;
   }
 }
