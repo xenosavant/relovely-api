@@ -62,12 +62,6 @@ export class AuthController {
       throw new HttpErrors.Conflict('Email already exists');
     }
 
-    const existingUsername = await this.userRepository.findOne({ where: { username: request.username } });
-
-    if (existingUsername) {
-      throw new HttpErrors.Conflict('Username already exists');
-    }
-
     const hash = await this.credentialService.hashPassword(request.password);
     const rand = Math.random().toString();
     const now = new Date();
@@ -77,7 +71,6 @@ export class AuthController {
     const stripeId = await this.stripeService.createCustomer(downcasedEmail);
 
     const user = await this.userRepository.create({
-      username: request.username,
       email: downcasedEmail,
       type: 'member',
       passwordHash: hash,

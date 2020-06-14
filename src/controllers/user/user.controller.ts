@@ -46,6 +46,7 @@ import { Card } from '../../models/card.model';
 import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
+import * as crypto from 'crypto'
 
 export class UserController {
   constructor(
@@ -199,6 +200,10 @@ export class UserController {
       if (key === 'username') {
         const username = updates['username'] as string;
         if (updates['username'] !== user.username) {
+          const instagramUsername = await this.instagramService.checkForProfile(username)
+          if (instagramUsername) {
+            throw new HttpErrors.Conflict(`That's an Instagram username. If it's you, go to Acccount → Settings → Instagram and link your account.`);
+          }
           const existingUsername = await this.userRepository.findOne({ where: { username: username } });
           if (existingUsername) {
             throw new HttpErrors.Conflict('Username already exists');
@@ -301,11 +306,18 @@ export class UserController {
       channels.push(request.channel3)
     }
 
+    const rand = Math.random().toString();
+    const now = new Date();
+    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+      verficationCodeString = verificationCode.digest('hex');
+
     await this.userRepository.create({
       firstName: request.firstName,
       lastName: request.lastName,
       email: request.email,
       type: 'seller',
+      emailVerified: false,
+      emailVerificationCode: verficationCodeString,
       seller: {
         missingInfo: ['external_account'],
         errors: [],

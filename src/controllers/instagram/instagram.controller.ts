@@ -239,18 +239,18 @@ export class InstagramController {
 
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
 
-    if (existingUser) {
+    if (existingUser && existingUser.id !== this.user.id) {
       throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
     }
 
     const profile = this.user;
     await this.userRepository.updateById(this.user.id, {
       instagramAuthToken: longLivedToken.access_token,
-      instagramUsername: data.username
+      instagramUsername: data.username,
+      username: data.username
     });
 
     return await this.userRepository.findById(this.user.id);
-
   }
 
 
