@@ -200,10 +200,6 @@ export class UserController {
       if (key === 'username') {
         const username = updates['username'] as string;
         if (updates['username'] !== user.username) {
-          const instagramUsername = await this.instagramService.checkForProfile(username)
-          if (instagramUsername) {
-            throw new HttpErrors.Conflict(`That's an Instagram username. If it's you, go to Acccount → Settings → Instagram and link your account.`);
-          }
           const existingUsername = await this.userRepository.findOne({ where: { username: username } });
           if (existingUsername) {
             throw new HttpErrors.Conflict('Username already exists');

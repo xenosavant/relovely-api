@@ -96,22 +96,4 @@ export class InstagramService {
     const response = JSON.parse(await client(options));
     return { username: response.username, id: response.id };
   }
-
-  public async checkForProfile(username: string): Promise<boolean> {
-    const options = {
-      method: 'GET',
-      uri: `${this.instagramUrl}/${username}/?__a=1`,
-      resolveWithFullResponse: true,
-      headers: { 'cookie': `ig_did=${process.env.INSTAGRAM_IG}; mid=${process.env.INSTAGRAM_MID}; rur=FRC; csrftoken=${process.env.INSTAGRAM_CSRF}; ds_user_id=12485442097; sessionid=${process.env.INSAGRAM_SESSIONID}; shbid=13778; shbts=1592158631.7574918; urlgen="{${process.env.INSAGRAM_URL1}": ${process.env.INSAGRAM_NUMBERS} ${process.env.INSAGRAM_URL2}": 701}:1jkXC8:-NC0LG0Xap8_UZK6rIFldNygyGs` },
-    }
-    let result: boolean = false;
-    // try {
-    let response = await client(options);
-    throw new HttpErrors.Conflict(response.statusCode.toString() + response.body.toString());
-    result = true;
-    // } catch (error) {
-    //   result = false;
-    // }
-    return result;
-  }
 }
