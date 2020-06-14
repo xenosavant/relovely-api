@@ -45,6 +45,7 @@ import { SellerDetails } from '../../models/seller-details';
 import { Card } from '../../models/card.model';
 import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
+import { SellerApplicationRequest } from './request/seller-application.request';
 
 export class UserController {
   constructor(
@@ -259,6 +260,61 @@ export class UserController {
     if (updatePromises.length) {
       await Promise.all(updatePromises);
     }
+  }
+
+  @post('/users/apply', {
+    responses: {
+      '204': {
+        description: 'Seller POST success',
+      },
+    },
+  })
+  async apply(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SellerApplicationRequest),
+        },
+      },
+    })
+    request: SellerApplicationRequest,
+  ): Promise<void> {
+
+    const existingUser = await this.userRepository.findOne({ where: { instagramUsername: request.instagramUsername } });
+    if (existingUser) {
+      throw new HttpErrors.Conflict('That Instagram user already exists.');
+    }
+
+    const existinEmail = await this.userRepository.findOne({ where: { email: request.email } });
+    if (existinEmail) {
+      throw new HttpErrors.Conflict('That Email is already in use.');
+    }
+
+    const channels = [];
+    if (request.channel1) {
+      channels.push(request.channel1);
+    }
+    if (request.channel2) {
+      channels.push(request.channel2)
+    }
+    if (request.channel3) {
+      channels.push(request.channel3)
+    }
+
+    await this.userRepository.create({
+      firstName: request.firstName,
+      lastName: request.lastName,
+      email: request.email,
+      type: 'seller',
+      seller: {
+        missingInfo: ['external_account'],
+        errors: [],
+        verificationStatus: 'unverified',
+        address: request.address,
+        approved: false,
+        socialChannels: channels
+      }
+    });
   }
 
   @authenticate('jwt')
