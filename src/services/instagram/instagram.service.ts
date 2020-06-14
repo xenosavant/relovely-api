@@ -107,16 +107,9 @@ export class InstagramService {
     let result: boolean = false;
     try {
       let response = await client(options);
-      if (response.statusCode === 404) {
-        result = true;
-      } else if (response.statusCode === 200) {
-        const regex = new RegExp(`@${username}`, 'g');
-        if (regex.test(response.body)) {
-          result = true;
-        }
-      }
-    } catch (error) {
       result = true;
+    } catch (error) {
+      result = false;
     }
     return result;
   }
