@@ -99,7 +99,7 @@ export class InstagramService {
   public async checkForProfile(username: string): Promise<boolean> {
     const options = {
       method: 'GET',
-      uri: `${this.instagramUrl}/${username}`,
+      uri: `${this.instagramUrl}/${username}/?__a=1`,
       resolveWithFullResponse: true,
       headers: { 'Accept': 'application/json' }
     }
