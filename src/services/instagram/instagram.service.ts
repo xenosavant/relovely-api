@@ -116,8 +116,8 @@ export class InstagramService {
           result = false;
         }
       }
-    } catch {
-      result = false;
+    } catch (error) {
+      result = true;
     }
     return result;
   }
