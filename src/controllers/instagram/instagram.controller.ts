@@ -39,7 +39,7 @@ export class InstagramController {
     public stripeService: StripeService,
     @service(SendgridService)
     public sendGridService: SendgridService,
-    @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile, ) { }
+    @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile,) { }
 
   @post('/instagram/sell', {
     responses: {
@@ -243,11 +243,21 @@ export class InstagramController {
       throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
     }
 
+    const existingUsers = await this.userRepository.find({ where: { username: data.username } });
+
+    existingUsers.forEach(u => {
+      this.userRepository.updateById(u.id, {
+        username: undefined,
+        usernameReset: true
+      })
+    })
+
     const profile = this.user;
     await this.userRepository.updateById(this.user.id, {
       instagramAuthToken: longLivedToken.access_token,
       instagramUsername: data.username,
-      username: data.username
+      username: data.username,
+      usernameReset: false
     });
 
     return await this.userRepository.findById(this.user.id);

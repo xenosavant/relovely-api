@@ -205,6 +205,7 @@ export class UserController {
             throw new HttpErrors.Conflict('Username already exists');
           }
         }
+        updates['usernameReset'] = false;
       }
     }
     await this.userRepository.updateById(id, updates);

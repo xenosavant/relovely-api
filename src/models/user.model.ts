@@ -32,6 +32,12 @@ export class User extends Entity {
     type: 'string',
     required: false,
   })
+  usernameReset?: boolean;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
   instagramUsername?: string;
 
   @property({
