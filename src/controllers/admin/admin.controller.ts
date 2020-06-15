@@ -51,13 +51,12 @@ export class AdminController {
         },
       },
     })
-    request: SellerApplicationRequest,
+    request: SellerApplicationRequest
   ): Promise<void> {
-    const user = await this.userRepository.findById(this.user.id, { fields: { type: true } });
-    if (user.type !== 'admin') {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
-
     const existingEmail = await this.userRepository.findOne({ where: { email: request.email } });
 
     if (existingEmail) {
@@ -118,8 +117,8 @@ export class AdminController {
     request: ApproveSellerRequest,
   ): Promise<void> {
 
-    const admin = await this.userRepository.findById(this.user.id, { fields: { type: true } });
-    if (!admin || admin.type !== 'admin') {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
 
@@ -162,8 +161,8 @@ export class AdminController {
   })
   async favorites(
   ): Promise<User[]> {
-    const user = await this.userRepository.findById(this.user.id, { fields: { type: true } });
-    if (user.type !== 'admin') {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
     return await this.userRepository.find({
