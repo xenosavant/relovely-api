@@ -134,7 +134,7 @@ export class AuthController {
 
 
     const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
+    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'internal' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 
@@ -189,7 +189,7 @@ export class AuthController {
     await this.userRepository.updateById(user.id, updates);
 
     const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
+    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'internal' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 
@@ -273,7 +273,7 @@ export class AuthController {
     });
 
     const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
+    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'internal' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
 

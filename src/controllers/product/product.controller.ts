@@ -58,10 +58,12 @@ export class ProductController {
   })
   async find(
     @param.query.string('category') category: string,
+    @param.query.string('pageLength') pageLength: number,
     @param.query.string('sizes') sizes?: string,
     @param.query.string('colors') colors?: string,
     @param.query.string('prices') prices?: string,
     @param.query.string('terms') terms?: string,
+    @param.query.string('page') page?: number,
   ): Promise<ListResponse<ProductWithRelations>> {
     const where: Where<Product> = {
       and: [
@@ -69,6 +71,8 @@ export class ProductController {
         { active: true },
       ]
     };
+
+    const pageNumber = page || 0;
 
     if (terms) {
       const termsArray = terms.split(',');
@@ -126,12 +130,21 @@ export class ProductController {
       where.and.push(and);
     }
 
-    const products = await this.productRepository.find({
+    let count: number = 0, products: ProductWithRelations[] = [];
+
+    const productPromise = this.productRepository.find({
       where: where,
+      skip: pageNumber * pageLength,
+      limit: pageLength,
       include: [{ relation: 'seller', scope: { fields: userListFields } }]
-    });
+    }).then(response => products = response);
+
+    const countPromise = this.productRepository.count(where).then(response => count = response.count);
+
+    await Promise.all([productPromise, countPromise]);
+
     return {
-      count: products.length,
+      count: count,
       items: products
     }
   }
