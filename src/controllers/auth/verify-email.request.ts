@@ -4,4 +4,6 @@ import { model, property } from "@loopback/repository";
 export class VerifyEmailRequest {
   @property()
   code: string;
+  @property()
+  password?: string;
 }

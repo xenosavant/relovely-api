@@ -9,7 +9,7 @@ export class SellerApplicationRequest {
   @property()
   lastName: string;
   @property()
-  address: Address;
+  address?: Address;
   @property()
   email: string;
   @property()

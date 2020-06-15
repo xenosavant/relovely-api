@@ -117,8 +117,7 @@ export class InstagramController {
       seller: {
         verificationStatus: 'unverified',
         missingInfo: ['external_account'],
-        errors: [],
-        approved: false
+        errors: []
       },
       stripeCustomerId: stripeId
     });

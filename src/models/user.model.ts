@@ -17,6 +17,12 @@ export class User extends Entity {
   id?: string;
 
   @property({
+    type: 'boolean',
+    required: true,
+  })
+  active: boolean;
+
+  @property({
     type: 'string',
     required: true,
   })

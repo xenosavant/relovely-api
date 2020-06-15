@@ -13,6 +13,8 @@ export class SellerDetails {
   address?: Address
   @property()
   approved?: boolean;
+  @property()
+  featured?: boolean;
   @property.array('string')
   socialChannels?: string[];
 }

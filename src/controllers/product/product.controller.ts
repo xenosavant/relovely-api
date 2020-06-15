@@ -41,20 +41,6 @@ export class ProductController {
     private user: AppUserProfile
   ) { }
 
-  @get('/products/count', {
-    responses: {
-      '200': {
-        description: 'Product model count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async count(
-    @param.query.object('where', getWhereSchemaFor(Product)) where?: Where<Product>,
-  ): Promise<Count> {
-    return this.productRepository.count(where);
-  }
-
   @get('/products', {
     responses: {
       '200': {

@@ -81,7 +81,7 @@ export class FacebookController {
       const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
 
       user = await this.userRepository.create({
-        username: fbuser.name?.replace(' ', ''),
+        active: true,
         stripeCustomerId: stripeId,
         email: fbuser.email,
         type: 'member',
@@ -105,7 +105,7 @@ export class FacebookController {
     }
 
     const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'facebook' });
+    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'facebook' });
 
     const jwt = await this.tokenService.generateToken(userProfile);
     return { user: user, jwt: jwt, existing: existing };

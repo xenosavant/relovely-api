@@ -202,7 +202,7 @@ export class UserController {
         if (updates['username'] !== user.username) {
           const existingUsername = await this.userRepository.findOne({ where: { username: username } });
           if (existingUsername) {
-            throw new HttpErrors.Conflict('Username already exists');
+            throw new HttpErrors.Conflict('Username already exists. If you own that username on Instagram, claim it by going to Account → Settings → Instagram');
           }
         }
         updates['usernameReset'] = false;
@@ -309,18 +309,28 @@ export class UserController {
       verficationCodeString = verificationCode.digest('hex');
 
     await this.userRepository.create({
+      active: true,
       firstName: request.firstName,
       lastName: request.lastName,
       email: request.email,
       type: 'seller',
       emailVerified: false,
       emailVerificationCode: verficationCodeString,
+      favorites: [],
+      followers: [],
+      following: [],
+      addresses: [],
+      cards: [],
+      preferences: {
+        sizes: [],
+        colors: [],
+        prices: []
+      },
       seller: {
         missingInfo: ['external_account'],
         errors: [],
         verificationStatus: 'unverified',
         address: request.address,
-        approved: false,
         socialChannels: channels
       }
     });

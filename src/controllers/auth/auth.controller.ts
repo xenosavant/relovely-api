@@ -1,4 +1,4 @@
-import { repository } from "@loopback/repository";
+import { repository, DataObject } from "@loopback/repository";
 import { UserRepository } from "../../repositories";
 import { post, getModelSchemaRef, requestBody, HttpErrors } from "@loopback/rest";
 import { AuthResponse } from "../../authentication/auth-response";
@@ -15,6 +15,7 @@ import { VerifyEmailRequest } from "./verify-email.request";
 import { ResetPasswordRequest } from "./reset-password-request";
 import { PasswordEmailRequest } from "./password-email-request";
 import { StripeService } from '../../services/stripe/stripe.service';
+import { User } from '../../models';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -72,6 +73,7 @@ export class AuthController {
     const stripeId = await this.stripeService.createCustomer(downcasedEmail);
 
     const user = await this.userRepository.create({
+      active: true,
       email: downcasedEmail,
       type: 'member',
       passwordHash: hash,
@@ -173,7 +175,18 @@ export class AuthController {
       throw new HttpErrors.Forbidden();
     }
 
-    this.userRepository.updateById(user.id, { emailVerified: true, emailVerificationCode: undefined });
+    const updates: DataObject<User> = {};
+
+    if (user.type === 'seller' && request.password) {
+      const hash = await this.credentialService.hashPassword(request.password);
+      updates.passwordHash = hash;
+      updates.passwordVerificationCode = undefined;
+    }
+
+    updates.emailVerified = true;
+    updates.emailVerificationCode = undefined;
+
+    await this.userRepository.updateById(user.id, updates);
 
     const userProfile = {} as AppUserProfile;
     Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'internal' });
