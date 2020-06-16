@@ -46,6 +46,7 @@ import { Card } from '../../models/card.model';
 import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
+import * as crypto from 'crypto';
 
 export class UserController {
   constructor(
