@@ -30,6 +30,9 @@ import { SecurityBindings } from '@loopback/security';
 import { inject } from '@loopback/core';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { request } from 'http';
+import { productListFields, ProductList } from './response/product-list.interface';
+import { ProductDetailResponse } from './response/product-detail.response';
+const ObjectId = require('mongodb').ObjectId
 
 export class ProductController {
   constructor(
@@ -208,7 +211,8 @@ export class ProductController {
     }
     const products = await this.productRepository.find({
       where: {
-        sellerId: this.user.id
+        sellerId: this.user.id,
+        active: true
       }, order: ['sold ASC'],
       include: [{ relation: 'seller', scope: { fields: userListFields } }]
     });
@@ -264,12 +268,21 @@ export class ProductController {
   })
   async findById(
     @param.path.string('id') id: string,
-  ): Promise<ProductDetail> {
+  ): Promise<ProductDetailResponse> {
     const product = await this.productRepository.findById(id, {
       fields: productDetailFields, include: [{ relation: 'seller', scope: { fields: userListFields } }]
     }) as any;
+
+    const more = (await this.productRepository.find({ where: { sellerId: product.sellerId, id: { neq: ObjectId(id) } }, fields: productListFields })) as unknown;
+
+    if (!product.active) {
+      throw new HttpErrors.NotFound();
+    }
     const response = product as ProductDetail;
-    return response;
+    return {
+      product: response,
+      more: more as ProductList[]
+    }
   }
 
   @authenticate('jwt')
@@ -317,17 +330,16 @@ export class ProductController {
     }
   }
 
-  @put('/products/{id}', {
-    responses: {
-      '204': {
-        description: 'Product PUT success',
-      },
-    },
-  })
-  async replaceById(
+  @authenticate('jwt')
+  @del('/products/{id}')
+  async delete(
     @param.path.string('id') id: string,
-    @requestBody() product: Product,
-  ): Promise<void> {
-    await this.productRepository.replaceById(id, product);
+  ) {
+    const product = await this.productRepository.findById(id, { fields: { sellerId: true } });
+    const sellerId = product.sellerId.toString();
+    if (product.sellerId.toString() !== this.user.id) {
+      throw new HttpErrors.Forbidden();
+    }
+    await this.productRepository.updateById(id, { active: false });
   }
 }

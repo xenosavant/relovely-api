@@ -63,6 +63,7 @@ export class RelovelyApplication extends BootMixin(
     this.bind(TokenServiceBindings.HASH_SERVICE).toClass(BcryptHasher);
 
 
+    this.rest
     // Services
 
     this.bind('services.AppCredentialService').toClass(AppCredentialService);

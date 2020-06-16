@@ -66,11 +66,6 @@ export class UserController {
     private handler: FileUploadHandler
   ) { }
 
-  productListFields = {
-    id: true, title: true, seller: true, imageUrls: true, videoUrls: true, auction: true,
-    auctionStart: true, auctionEnd: true, currentBid: true, sizeId: true, size: true, price: true, sold: true
-  }
-
   @authenticate('jwt')
   @get('/users/me', {
     responses: {
@@ -157,6 +152,8 @@ export class UserController {
     for (const key in promiseDictionary) {
       response[key] = promiseDictionary[key];
     }
+
+    response.products = response.products.filter((p: any) => p.active);
 
     response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
     response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
@@ -506,10 +503,16 @@ export class UserController {
   ): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
+        response.setHeader('Access-Control-Allow-Origin', '*');
         if (err) reject(err);
         else {
           const uploadedFiles = (request.files as any[]);
-          resolve(this.stripeService.uploadFile(uploadedFiles[0].buffer));
+          this.stripeService.uploadFile(uploadedFiles[0].buffer).then(result => {
+            response.status(200).send(result);
+            resolve();
+          }, error => {
+            reject(err);
+          })
         }
       });
     });

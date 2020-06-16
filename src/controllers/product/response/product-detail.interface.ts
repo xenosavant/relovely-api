@@ -1,6 +1,7 @@
 import { UserList } from '../../user/response/user-list.interface';
 import { ImageSet } from '../../../models/image-set';
 import { VideoMetaData } from '../../../models/video-meta-data.model';
+import { ProductList } from './product-list.interface';
 
 export interface ProductDetail {
   id: string;
