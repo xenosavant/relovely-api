@@ -504,6 +504,7 @@ export class UserController {
     return new Promise<string>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         response.setHeader('Access-Control-Allow-Origin', '*');
+        response.setHeader('Access-Control-Allow-Credentials', 'true');
         if (err) reject(err);
         else {
           const uploadedFiles = (request.files as any[]);
