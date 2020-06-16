@@ -9,7 +9,12 @@ if (require.main === module) {
       port: +(process.env.PORT || 3001),
       host: process.env.HOST,
       cors: {
-        origin: 'https://dev.relovely.com'
+        origin: 'https://dev.relovely.com',
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
+        maxAge: 86400,
+        credentials: true
       },
       // The `gracePeriodForClose` provides a graceful close for http/https
       // servers with keep-alive clients. The default value is `Infinity`

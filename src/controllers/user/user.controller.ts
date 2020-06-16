@@ -46,7 +46,6 @@ import { Card } from '../../models/card.model';
 import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
-import * as crypto from 'crypto'
 
 export class UserController {
   constructor(
@@ -503,8 +502,6 @@ export class UserController {
   ): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
-        response.setHeader('Access-Control-Allow-Origin', '*');
-        response.setHeader('Access-Control-Allow-Credentials', 'true');
         if (err) reject(err);
         else {
           const uploadedFiles = (request.files as any[]);
