@@ -165,6 +165,29 @@ export class UserController {
     return detailResponse;
   }
 
+  @get('/users/featured', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(User, { includeRelations: true }),
+          },
+        },
+      },
+    },
+  })
+  async featured(): Promise<UserDetail[]> {
+    const users = await this.userRepository.find({ where: { 'seller.featured': true } as any, fields: userListFields });
+    return users.map(u => {
+      return {
+        username: u.username as string,
+        profileImageUrl: u.profileImageUrl as string,
+        type: u.type
+      }
+    });
+  }
+
   @authenticate('jwt')
   @patch('/users/{id}', {
     responses: {

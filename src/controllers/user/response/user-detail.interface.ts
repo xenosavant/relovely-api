@@ -3,8 +3,8 @@ import { UserList } from './user-list.interface';
 
 export interface UserDetail {
   id?: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   username: string;
   profileImageUrl: string;
   totalListings?: number;

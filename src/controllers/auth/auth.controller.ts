@@ -94,7 +94,7 @@ export class AuthController {
 
     await this.sendGridService.sendEmail(request.email,
       'Welcome To Relovely!',
-      `Click <a href="dev.relovely.com/account/verify?type=member&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
+      `Click <a href="https://dev.relovely.com/account/verify?type=member&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
   }
 
   @post('auth/signin', {
@@ -229,7 +229,7 @@ export class AuthController {
 
     await this.sendGridService.sendEmail(user.email as string,
       'Relovely - Reset Password',
-      `Click <a href="dev.relovely.com/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
+      `Click <a href="https://dev.relovely.com/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
   }
 
   @post('auth/password/reset', {
