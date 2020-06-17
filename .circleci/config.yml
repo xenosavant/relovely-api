@@ -18,16 +18,26 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push $IMAGE_NAME:latest
-      - run:
-          name: Deploy Container
-          command: |
-            ssh -o StrictHostKeyChecking=no root@$DROPLET_IP bash -c '
-            cat ~/password.txt | docker login --username relovely --password-stdin;
-            docker stop $(docker ps -a -q);
-            docker rm -f $(docker ps -a -q);
-            docker rmi -f $(docker images -q);
-            docker pull relovely/relovely-api:latest;
-            docker run --env-file ~/env.config -d --network host relovely/relovely-api'
+  deploy:
+    docker:
+      - image: circleci/node:12.14.1
+    steps:
+    - run: |
+      if [ "$CIRCLE_BRANCH" = "develop" ]; then
+        CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
+      elif [ "$CIRCLE_BRANCH" = "master" ]; then
+        CURRENT_DROPLET_IP=$DROPLET_IP
+      echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
+    - run:
+      name: Deploy Container
+      command: |
+        ssh -o StrictHostKeyChecking=no root@$CURRENT_DROPLET_IP bash -c '
+        cat ~/password.txt | docker login --username relovely --password-stdin;
+        docker stop $(docker ps -a -q);
+        docker rm -f $(docker ps -a -q);
+        docker rmi -f $(docker images -q);
+        docker pull relovely/relovely-api:latest;
+        docker run --env-file ~/env.config -d --network host relovely/relovely-api'
 workflows:
   version: 2
   build-master:
