@@ -16,6 +16,7 @@ jobs:
               CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
             elif [ $CIRCLE_BRANCH = 'master' ]; then
               CURRENT_DROPLET_IP=$DROPLET_IP
+            fi
             echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
       - run:
           name: Build Docker image
