@@ -2,7 +2,7 @@
 
 import { repository } from "@loopback/repository";
 import { LookupRepository } from "../../repositories";
-import { post, getModelSchemaRef, requestBody, get } from "@loopback/rest";
+import { post, getModelSchemaRef, requestBody, get, HttpErrors } from "@loopback/rest";
 import { AuthResponse } from "../../authentication/auth-response";
 import { OAuthRequest } from "../../authentication/oauth-request";
 import { Lookup } from "../../models";
@@ -50,9 +50,9 @@ export class LookupController {
   async lookup(): Promise<LookupDataResponse> {
 
     try {
-      this.lookupRepository.dataSource.connect()
+      this.lookupRepository.dataSource.connect();
     } catch (err) {
-      const error = err;
+      throw new HttpErrors.BadRequest(err);
     }
     return {
       categories: (await this.lookupRepository.findOne({ where: { key: 'categories' } }) as Lookup),
