@@ -124,7 +124,7 @@ export class InstagramController {
 
     // TODO: remove this in production
     await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
-      `Click <a href="https://dev.relovely.com/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
+      `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
   }
 
 
@@ -202,7 +202,7 @@ export class InstagramController {
 
     // TODO: remove this in production
     await this.sendGridService.sendEmail(user.email as string, `Welcome to Relovely!`,
-      `Click <a href="https://dev.relovely.com/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
+      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
   }
 
   @authenticate('jwt')
