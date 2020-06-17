@@ -10,6 +10,14 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
+        name: Set IP
+        command: |
+          if [ $CIRCLE_BRANCH = 'develop' ]; then
+            CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
+          elif [ $CIRCLE_BRANCH = 'master' ]; then
+            CURRENT_DROPLET_IP=$DROPLET_IP
+          echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
+      - run:
           name: Build Docker image
           command: |
             docker build -t $IMAGE_NAME:latest .
@@ -19,16 +27,8 @@ jobs:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push $IMAGE_NAME:latest
       - run:
-          name: Set IP
-          command: |
-            if [ $CIRCLE_BRANCH = "develop" ]; then
-              CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
-            elif [ $CIRCLE_BRANCH = "master" ]; then
-              CURRENT_DROPLET_IP=$DROPLET_IP
-      - run:
           name: Deploy
           command: |
-            echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
             ssh -o StrictHostKeyChecking=no circle@$CURRENT_DROPLET_IP bash -c '
             sudo cat ~/password.txt | docker login --username relovely --password-stdin;
             sudo docker stop $(docker ps -a -q);
