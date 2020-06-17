@@ -13,27 +13,27 @@ import { LookupDataResponse } from './lookup-data.response';
 
 export class LookupController {
   constructor(@repository(LookupRepository)
-  public lookupRepository: LookupRepository, ) { }
+  public lookupRepository: LookupRepository) { }
 
-  @post('/lookup', {
-    responses: {
-      '200': {
-        description: 'User model instance'
-      },
-    },
-  })
-  async post(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Lookup),
-        },
-      },
-    })
-    data: Lookup,
-  ): Promise<void> {
-    await this.lookupRepository.create(data);
-  }
+  // @post('/lookup', {
+  //   responses: {
+  //     '200': {
+  //       description: 'User model instance'
+  //     },
+  //   },
+  // })
+  // async post(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Lookup),
+  //       },
+  //     },
+  //   })
+  //   data: Lookup,
+  // ): Promise<void> {
+  //   await this.lookupRepository.create(data);
+  // }
 
   @get('/lookup', {
     responses: {
@@ -47,7 +47,13 @@ export class LookupController {
       },
     },
   })
-  async signup(): Promise<LookupDataResponse> {
+  async lookup(): Promise<LookupDataResponse> {
+
+    try {
+      this.lookupRepository.dataSource.connect()
+    } catch (err) {
+      const error = err;
+    }
     return {
       categories: (await this.lookupRepository.findOne({ where: { key: 'categories' } }) as Lookup),
       sizes: (await this.lookupRepository.findOne({ where: { key: 'sizes' } }) as Lookup),
