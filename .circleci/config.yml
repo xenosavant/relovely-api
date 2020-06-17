@@ -44,5 +44,13 @@ workflows:
       - build:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - develop
+      - deploy:
+          filters:
+            branches:
+              only:
+                - master
+                - develop
 
