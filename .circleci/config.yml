@@ -46,10 +46,4 @@ workflows:
               only:
                 - master
                 - develop
-      - deploy:
-          filters:
-            branches:
-              only:
-                - master
-                - develop
 
