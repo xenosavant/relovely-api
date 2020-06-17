@@ -10,13 +10,13 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-        name: Set IP
-        command: |
-          if [ $CIRCLE_BRANCH = 'develop' ]; then
-            CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
-          elif [ $CIRCLE_BRANCH = 'master' ]; then
-            CURRENT_DROPLET_IP=$DROPLET_IP
-          echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
+          name: Set IP
+          command: |
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
+            elif [ $CIRCLE_BRANCH = 'master' ]; then
+              CURRENT_DROPLET_IP=$DROPLET_IP
+            echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
       - run:
           name: Build Docker image
           command: |
