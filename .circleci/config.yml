@@ -25,18 +25,18 @@ jobs:
     - run:
       name: Deploy Container
       command: |
-      if [ "$CIRCLE_BRANCH" = "develop" ]; then
+      if [ $CIRCLE_BRANCH = "develop" ]; then
          CURRENT_DROPLET_IP=$DEVELOPMENT_DROPLET_IP
-      elif [ "$CIRCLE_BRANCH" = "master" ]; then
+      elif [ $CIRCLE_BRANCH = "master" ]; then
          CURRENT_DROPLET_IP=$DROPLET_IP
-        echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
-        ssh -o StrictHostKeyChecking=no circle@$CURRENT_DROPLET_IP bash -c '
-        sudo cat ~/password.txt | docker login --username relovely --password-stdin;
-        sudo docker stop $(docker ps -a -q);
-        sudo docker rm -f $(docker ps -a -q);
-        sudo docker rmi -f $(docker images -q);
-        sudo docker pull relovely/relovely-api:latest;
-        sudo docker run --env-file ~/env.config -d --network host relovely/relovely-api'
+      echo "export CURRENT_DROPLET_IP=$CURRENT_DROPLET_IP" >> $BASH_ENV
+      ssh -o StrictHostKeyChecking=no circle@$CURRENT_DROPLET_IP bash -c '
+      sudo cat ~/password.txt | docker login --username relovely --password-stdin;
+      sudo docker stop $(docker ps -a -q);
+      sudo docker rm -f $(docker ps -a -q);
+      sudo docker rmi -f $(docker images -q);
+      sudo docker pull relovely/relovely-api:latest;
+      sudo docker run --env-file ~/env.config -d --network host relovely/relovely-api'
 workflows:
   version: 2
   build-master:
