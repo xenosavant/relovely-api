@@ -178,7 +178,7 @@ export class UserController {
     },
   })
   async featured(): Promise<UserDetail[]> {
-    const users = await this.userRepository.find({ where: { 'seller.featured': true } as any, fields: userListFields });
+    let users = await this.userRepository.find({ where: { 'seller.featured': true } as any, fields: userListFields });
     return users.map(u => {
       return {
         username: u.username as string,
