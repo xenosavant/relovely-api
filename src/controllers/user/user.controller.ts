@@ -132,6 +132,13 @@ export class UserController {
         }) / user.reviews.length);
       }
       response.averageRating = rating;
+      response.products = response.products.filter((p: any) => p.active);
+
+      response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
+      response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
+      response.city = (response.seller && response.seller.address) ? response.seller.address.city : null;
+      response.state = (response.seller && response.seller.address) ? response.seller.address.state : null;
+      delete response.products;
     }
     promises.push(
       this.userRepository.find({
@@ -152,14 +159,6 @@ export class UserController {
     for (const key in promiseDictionary) {
       response[key] = promiseDictionary[key];
     }
-
-    response.products = response.products.filter((p: any) => p.active);
-
-    response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
-    response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
-    response.city = (response.seller && response.seller.address) ? response.seller.address.city : null;
-    response.state = (response.seller && response.seller.address) ? response.seller.address.state : null;
-    delete response.products;
 
     const detailResponse = { ...response } as UserDetail;
     return detailResponse;
@@ -349,6 +348,7 @@ export class UserController {
       seller: {
         missingInfo: ['external_account'],
         errors: [],
+        freeSales: 3,
         verificationStatus: 'unverified',
         address: request.address,
         socialChannels: channels
