@@ -160,7 +160,7 @@ export class InstagramController {
     try {
       data = await this.instagramService.getBasicUserData(request.code);
     }
-    catch {
+    catch (err) {
       throw new HttpErrors.BadRequest('Invalid account')
     }
 
@@ -233,7 +233,7 @@ export class InstagramController {
       longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
     }
     catch (error) {
-      throw new HttpErrors.BadRequest('Invalid account.')
+      throw new HttpErrors.BadRequest(error);
     }
 
     const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
