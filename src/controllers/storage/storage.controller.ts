@@ -38,7 +38,7 @@ export class StorageController {
     request: SignatureRequest,
   ): Promise<SignatureResponse> {
 
-    const result = await this.cloudinaryService.getSignature(request.folder, request.timestamp, request.publicId);
+    const result = await this.cloudinaryService.getSignature(request.folder, request.timestamp, request.uploadPreset);
     return { signature: result };
   }
 

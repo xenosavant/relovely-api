@@ -7,5 +7,5 @@ export class SignatureRequest {
   @property()
   timestamp: string;
   @property()
-  publicId?: string;
+  uploadPreset: string;
 }
