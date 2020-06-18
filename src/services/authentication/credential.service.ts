@@ -25,15 +25,15 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
     const message = 'Invalid login.'
 
     if (!foundUser) {
-      throw new HttpErrors.Forbidden('User Not Found');
+      throw new HttpErrors.Forbidden(message);
     }
 
     if (!foundUser.passwordHash) {
-      throw new HttpErrors.Forbidden('No password Hash');
+      throw new HttpErrors.Forbidden(message);
     }
     const valid = await this.verifyPassword(foundUser.passwordHash as string, credentials.password);
     if (!valid) {
-      throw new HttpErrors.Forbidden('Wrong password');
+      throw new HttpErrors.Forbidden(message);
     }
 
     return foundUser;
