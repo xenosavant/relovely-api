@@ -83,9 +83,9 @@ export class Product extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  brand: string;
+  brand?: string;
 
   @property({
     type: 'number',
