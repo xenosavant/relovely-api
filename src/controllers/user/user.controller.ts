@@ -577,13 +577,13 @@ export class UserController {
           throw new HttpErrors.NotFound;
         }
         if (account.individual?.verification?.status === 'verified') {
-          await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'verified', missingInfo: [], errors: [] } });
+          await this.userRepository.updateById(user.id, { ...user.seller, seller: { verificationStatus: 'verified', missingInfo: [], errors: [] } });
           response.status(200).send('success');
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
           if (reason.startsWith('rejected') || reason === 'listed') {
-            await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'rejected', missingInfo: [], errors: [] } });
+            await this.userRepository.updateById(user.id, { seller: { ...user.seller, verificationStatus: 'rejected', missingInfo: [], errors: [] } });
             response.status(200).send('success');
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
@@ -591,13 +591,14 @@ export class UserController {
               if (user.seller) {
                 await this.userRepository.updateById(user.id, {
                   seller: {
+                    ...user.seller,
                     missingInfo: account.requirements?.currently_due,
                     verificationStatus: 'review', errors: account.requirements.errors?.map(e => e.reason) || []
                   }
                 });
               }
             } else {
-              await this.userRepository.updateById(user.id, { seller: { verificationStatus: 'review', missingInfo: [], errors: [] } });
+              await this.userRepository.updateById(user.id, { seller: { ...user.seller, verificationStatus: 'review', missingInfo: [], errors: [] } });
             }
             response.status(200).send('success');
           }
