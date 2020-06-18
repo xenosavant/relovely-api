@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { BankAccountRequest } from '../../controllers/user/request/bank-account.request.interface';
 import { SellerAccountRequest } from '../../controllers/user/request/seller-account-request.interface';
 import { HttpErrors } from '@loopback/rest';
+import { User } from '../../models';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2020-03-02',
   typescript: true
@@ -140,11 +141,12 @@ export class StripeService {
     return result.id;
   }
 
-  async chargeCustomer(customerId: string, sellerAccountId: string, amount: number, cardId: string): Promise<string | null> {
+  async chargeCustomer(customerId: string, sellerId: string, amount: number, fees: number, cardId: string): Promise<string | null> {
+
     const param: Stripe.ChargeCreateParams = {
-      destination: {
-        account: sellerAccountId,
-        amount: amount
+      transfer_data: {
+        destination: sellerId,
+        amount: amount - fees
       },
       amount: amount,
       source: cardId,

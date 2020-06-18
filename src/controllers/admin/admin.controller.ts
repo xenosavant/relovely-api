@@ -91,6 +91,7 @@ export class AdminController {
       seller: {
         missingInfo: ['external_account'],
         errors: [],
+        freeSales: 3,
         verificationStatus: 'unverified',
         address: request.address
       }

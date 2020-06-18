@@ -84,14 +84,27 @@ export class EasyPostService {
 
     return new Promise((resolve, reject) => {
       shipment.save().then((result: any) => {
-        const rate = result.rates.find((r: any) => r.service === 'Priority')
+        const rate = result.rates.find((r: any) => r.service === 'Priority');
+        if (!rate) {
+          resolve({
+            rateId: '-1',
+            shippingRate: 0,
+            shipmentId: '-1',
+            error: 'Unable to retrieve shipping rate'
+          });
+        }
         resolve({
           rateId: rate.id,
           shippingRate: parseFloat(rate.rate) * 100,
           shipmentId: result.id
         });
       }, (error: any) => {
-        reject();
+        resolve({
+          rateId: '-1',
+          shippingRate: 0,
+          shipmentId: '-1',
+          error: 'Unable to retrieve shipping rate'
+        })
       })
     })
   }

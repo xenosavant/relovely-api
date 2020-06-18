@@ -10,4 +10,6 @@ export class PreviewShipmentResponse {
   shipmentId: string;
   @property()
   rateId: string;
+  @property()
+  error?: string;
 }

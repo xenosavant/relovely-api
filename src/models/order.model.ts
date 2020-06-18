@@ -127,6 +127,18 @@ export class Order extends Entity {
 
   @property({
     type: 'string',
+    required: true,
+  })
+  public sellerFee: number;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  public transferFee: number;
+
+  @property({
+    type: 'string',
     required: true
   })
   public paymentLast4: string;

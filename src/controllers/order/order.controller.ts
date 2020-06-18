@@ -34,6 +34,7 @@ import { Address } from '../../models/address.model';
 import { PreviewShipmentResponse } from '../shipment/preview-shipment.response';
 import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
 import { TaxService } from '../../services/tax/tax.service';
+import { SellerDetails } from '../../models/seller-details';
 
 @authenticate('jwt')
 export class OrderController {
@@ -74,9 +75,35 @@ export class OrderController {
       throw new HttpErrors.BadRequest('No customer');
     }
     if (!product.sold) {
-      const seller = await this.userRepository.findById(product.sellerId, { fields: { stripeSellerId: true } });
+      const shipTo = buyer.addresses.find(a => a.primary) as Address;
+      const seller = await this.userRepository.findById(product.sellerId, { fields: { stripeSellerId: true, seller: true } });
       const shipment = await this.easyPostService.purchaseShipment(request.shipmentId, request.rateId);
-      const token = await this.stripeService.chargeCustomer(buyer.stripeCustomerId as string, seller.stripeSellerId as string, product.price, request.paymentId);
+      let sellerFee = 0,
+        transferFee = 0,
+        freeSalesChanged = false;
+      if (seller.seller?.freeSales && seller.seller.freeSales > 0) {
+        freeSalesChanged = true;
+      } else {
+        sellerFee = Math.round(product.price * .1);
+        transferFee = Math.round((product.price * .029));
+      }
+
+      const tax = await this.taxService.calculateTax({
+        toAddress: shipTo,
+        fromAddress: (seller.seller as SellerDetails).address as Address,
+        shippingCost: shipment.shippingCost,
+        price: product.price,
+        sellerId: seller.id as string,
+        categoryId: product.categories.find(cat => cat.length === 2) as string
+      });
+
+      if (tax.error) {
+        throw new HttpErrors[500]('Something went wrong there...try your purchase again');
+      }
+
+      const total = product.price + tax.tax + shipment.shippingCost;
+      const fees = sellerFee + transferFee + tax.tax + shipment.shippingCost;
+      const token = await this.stripeService.chargeCustomer(buyer.stripeCustomerId as string, seller.stripeSellerId as string, total, fees, request.paymentId);
       if (token) {
         product.sold = true;
         await this.productRepository.update(product);
@@ -92,15 +119,23 @@ export class OrderController {
           trackerId: shipment.trackerId,
           shippingCarrier: 'USPS',
           shippingCost: shipment.shippingCost,
-          tax: 0,
+          tax: tax.tax,
           total: product.price + shipment.shippingCost,
           trackingUrl: shipment.trackingUrl,
           shippingLabelUrl: shipment.postageLabelUrl,
           address: buyer.addresses.find(a => a.primary) as Address,
           paymentLast4: card?.last4,
           paymentType: card?.type,
-          orderNumber: await this.generateOrderNumber()
+          orderNumber: await this.generateOrderNumber(),
+          sellerFee: sellerFee,
+          transferFee: transferFee
         });
+
+        if (freeSalesChanged) {
+          await this.userRepository.updateById(product.sellerId, { 'seller.freeSales': (seller.seller?.freeSales as number) - 1 } as any)
+        }
+
+        // TODO: Move this
         const taxTransaction = await this.taxService.createTransaction({
           transaction_id: order.id as string,
           transaction_date: moment().toDate(),
@@ -110,6 +145,7 @@ export class OrderController {
           to_city: request.address.city,
           to_street: request.address.line1,
           amount: (product.price / 100) + (order.shippingCost as number / 100),
+
           shipping: (order.shippingCost as number / 100),
           sales_tax: (order.tax as number / 100),
           line_items: [
@@ -215,8 +251,11 @@ export class OrderController {
     request: PreviewShipmentRequest
   ): Promise<PreviewShipmentResponse> {
     const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
-    request.fromAddress = seller.seller?.address
+    request.fromAddress = seller.seller?.address;
     const shipment = await this.easyPostService.createShipment(request);
+    if (shipment.error) {
+      throw new HttpErrors.BadRequest('Something went wrong...please refresh the page');
+    }
     const taxRate = await this.taxService.calculateTax({
       toAddress: request.toAddress,
       fromAddress: request.fromAddress as Address,

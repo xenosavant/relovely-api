@@ -15,6 +15,8 @@ export class SellerDetails {
   approved?: boolean;
   @property()
   featured?: boolean;
+  @property()
+  freeSales?: number;
   @property.array('string')
   socialChannels?: string[];
 }
