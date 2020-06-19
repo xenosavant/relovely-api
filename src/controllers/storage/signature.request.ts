@@ -8,4 +8,6 @@ export class SignatureRequest {
   timestamp: string;
   @property()
   uploadPreset: string;
+  @property()
+  publicId?: string;
 }

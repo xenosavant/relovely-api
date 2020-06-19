@@ -19,8 +19,11 @@ export class CloudinaryService {
     });
   }
 
-  public async getSignature(folder: string, timestamp: string, preset: string): Promise<string> {
+  public async getSignature(folder: string, timestamp: string, preset: string, publicId?: string): Promise<string> {
     const payload: any = { timestamp: timestamp, folder: folder, upload_preset: preset };
+    if (publicId) {
+      payload['public_id'] = publicId;
+    }
     return await v2.utils.api_sign_request(payload, this.secret);
   }
 
