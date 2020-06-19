@@ -10,7 +10,7 @@ const Taxjar = require('taxjar');
 
 const client = new Taxjar({
   apiKey: process.env.TAXJAR_API_KEY,
-  apiUrl: Taxjar.SANDBOX_API_URL
+  apiUrl: process.env.NODE_ENV === 'production' ? 'https://api.taxjar.com/v2/' : Taxjar.SANDBOX_API_URL
 });
 
 const TAX_CODE = '20010';
