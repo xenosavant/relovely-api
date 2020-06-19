@@ -48,6 +48,7 @@ import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
 import * as crypto from 'crypto';
 import { productListFields } from '../product/response/product-list.interface';
+import { httpsGetAsync } from '@loopback/testlab';
 
 export class UserController {
   constructor(
@@ -115,6 +116,9 @@ export class UserController {
         fields: userDetailFields,
         include: [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }]
       });
+    if (!user) {
+      throw new HttpErrors.NotFound();
+    }
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
     const promises: Promise<any>[] = []

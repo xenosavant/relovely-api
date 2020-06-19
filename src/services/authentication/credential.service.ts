@@ -44,10 +44,6 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
       where: { id: userId },
     });
 
-    if (!foundUser) {
-      throw new HttpErrors.Unauthorized();
-    }
-
     return foundUser;
   }
 

@@ -28,7 +28,11 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   async authenticate(request: Request): Promise<AppUserProfile | undefined> {
     const token: string = this.extractCredentials(request);
     const userProfile: AppUserProfile = await this.tokenService.verifyToken(token);
-    this.credentialService.verifyUser(userProfile.id as string);
+
+    const user = await this.credentialService.verifyUser(userProfile.id as string);
+    if (!user) {
+      throw new HttpErrors.Unauthorized();
+    }
     return userProfile;
   }
 
