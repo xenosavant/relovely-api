@@ -23,7 +23,7 @@ import {
 } from '@loopback/rest';
 import { User, UserWithRelations, Product } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
-import { UserList, userListFields } from './response/user-list.interface';
+import { UserList, userListFields, userAuthFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
 import { authenticate } from '@loopback/authentication';
@@ -47,6 +47,7 @@ import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
 import * as crypto from 'crypto';
+import { productListFields } from '../product/response/product-list.interface';
 
 export class UserController {
   constructor(
@@ -87,7 +88,7 @@ export class UserController {
   ): Promise<User> {
     let user;
     try {
-      user = await this.userRepository.findById(this.user.id as string, { fields: userDetailFields });
+      user = await this.userRepository.findById(this.user.id as string, { fields: userAuthFields });
       return user;
     } catch {
       throw new HttpErrors.Unauthorized;
@@ -121,7 +122,8 @@ export class UserController {
       promises.push(
         this.userRepository.find({
           where: { id: { inq: user.followers || [] } },
-          fields: userListFields
+          fields: productListFields,
+          include: [{ relation: 'seller', scope: { fields: userListFields } }]
         }).then(result => {
           promiseDictionary['followers'] = result;
         }));
@@ -141,9 +143,9 @@ export class UserController {
       delete response.products;
     }
     promises.push(
-      this.userRepository.find({
+      this.productsRepository.find({
         where: { id: { inq: user.favorites || [] } },
-        fields: userListFields
+        fields: productListFields
       }).then(result => {
         promiseDictionary['favorites'] = result;
       }),
@@ -491,9 +493,6 @@ export class UserController {
     if (!user.stripeSellerId) {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
     }
-    if (user.firstName !== request.firstName || user.lastName != request.lastName) {
-      throw new HttpErrors.Forbidden('Name on account must match name on account');
-    }
     await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
     const missing = user.seller?.missingInfo.splice(user.seller?.missingInfo.indexOf('external_acccount')) || [];
     await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, missingInfo: missing } });
@@ -566,7 +565,7 @@ export class UserController {
     try {
       event = this.stripeService.retrieveEvent(request, signature);
     } catch (err) {
-      throw new HttpErrors.BadRequest(err);
+      throw new HttpErrors.BadRequest;
     }
 
     switch (event.type) {
