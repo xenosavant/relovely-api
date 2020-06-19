@@ -566,7 +566,7 @@ export class UserController {
     try {
       event = this.stripeService.retrieveEvent(request, signature);
     } catch (err) {
-      throw new HttpErrors.BadRequest;
+      throw new HttpErrors.BadRequest(err);
     }
 
     switch (event.type) {
