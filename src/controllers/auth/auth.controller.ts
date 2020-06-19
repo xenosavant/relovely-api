@@ -121,7 +121,6 @@ export class AuthController {
   ): Promise<AuthResponse> {
 
     const downcasedEmail = request.email.toLowerCase();
-    throw new HttpErrors.BadRequest(`username: ${request.email} password: ${request.password} }`);
 
     const user = await this.credentialService.verifyCredentials({ identifier: downcasedEmail, password: request.password });
 
