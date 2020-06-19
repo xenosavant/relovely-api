@@ -122,8 +122,7 @@ export class UserController {
       promises.push(
         this.userRepository.find({
           where: { id: { inq: user.followers || [] } },
-          fields: productListFields,
-          include: [{ relation: 'seller', scope: { fields: userListFields } }]
+          fields: productListFields
         }).then(result => {
           promiseDictionary['followers'] = result;
         }));
@@ -145,7 +144,8 @@ export class UserController {
     promises.push(
       this.productsRepository.find({
         where: { id: { inq: user.favorites || [] } },
-        fields: productListFields
+        fields: productListFields,
+        include: [{ relation: 'seller', scope: { fields: userListFields } }]
       }).then(result => {
         promiseDictionary['favorites'] = result;
       }),
