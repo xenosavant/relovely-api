@@ -22,8 +22,6 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
       where: { email: credentials.identifier },
     });
 
-    throw new HttpErrors.Forbidden(await this.passwordHasher.hashPassword(credentials.password));
-
     const message = 'Invalid login.'
 
     if (!foundUser) {
