@@ -8,7 +8,7 @@ export class SellerDetails {
   @property.array('string')
   errors: string[];
   @property()
-  verificationStatus?: 'unverified' | 'review' | 'rejected' | 'verified';
+  verificationStatus: string;
   @property()
   address?: Address
   @property()
