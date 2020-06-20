@@ -337,7 +337,7 @@ export class UserController {
       active: true,
       firstName: request.firstName,
       lastName: request.lastName,
-      email: request.email,
+      email: request.email.toLowerCase(),
       type: 'seller',
       emailVerified: false,
       emailVerificationCode: verficationCodeString,
