@@ -599,7 +599,7 @@ export class UserController {
           } catch (err) {
             error = err;
           }
-          response.status(200).send(error);
+          response.status(200).send(JSON.stringify(user));
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
