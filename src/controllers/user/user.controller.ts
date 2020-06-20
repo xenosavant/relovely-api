@@ -590,8 +590,13 @@ export class UserController {
           throw new HttpErrors.NotFound;
         }
         if (account.individual?.verification?.status === 'verified') {
-          await this.userRepository.updateById(user.id, { seller: { ...user.seller, verificationStatus: 'verified', missingInfo: [], errors: [] } });
-          response.status(200).send(user.id);
+          let error = 'none';
+          try {
+            await this.userRepository.updateById(user.id, { emailVerified: true, seller: { address: user.seller?.address, missingInfo: user.seller?.missingInfo, verificationStatus: 'verified', errors: [] } });
+          } catch (err) {
+            error = err;
+          }
+          response.status(200).send(error);
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
