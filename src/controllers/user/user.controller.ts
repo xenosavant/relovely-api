@@ -498,14 +498,16 @@ export class UserController {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
     }
     await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
-    if (user.seller?.missingInfo.indexOf('external_account') as any > 0) {
-      const updates: string[] = [];
-      user.seller?.missingInfo.forEach(item => {
-        if (item !== 'external_account') {
-          updates.push(item);
-        }
-      })
-      await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+    if (user.seller && user.seller.missingInfo) {
+      if (user.seller.missingInfo.indexOf('external_account') > -1) {
+        const updates: string[] = [];
+        user.seller.missingInfo.forEach(item => {
+          if (item !== 'external_account') {
+            updates.push(item);
+          }
+        })
+        await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+      }
     }
     return await this.userRepository.findById(this.user.id);
   }
