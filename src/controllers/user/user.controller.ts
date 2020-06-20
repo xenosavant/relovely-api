@@ -592,7 +592,7 @@ export class UserController {
         if (account.individual?.verification?.status === 'verified') {
           let error = 'none';
           try {
-            await this.userRepository.updateById(user.id, { emailVerified: true, seller: { address: user.seller?.address, missingInfo: user.seller?.missingInfo, verificationStatus: 'verified', errors: [] } });
+            await this.userRepository.updateById(user.id, { emailVerified: false, seller: { address: user.seller?.address, missingInfo: user.seller?.missingInfo, verificationStatus: 'verified', errors: [] } });
           } catch (err) {
             error = err;
           }
@@ -601,8 +601,11 @@ export class UserController {
         const reason = account.requirements?.disabled_reason;
         if (reason) {
           if (reason.startsWith('rejected') || reason === 'listed') {
-            await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'rejected', 'seller.missingInfo': [], 'seller.errors': [] } as any);
-            response.status(204).send('case 2');
+            if (user.seller) {
+              user.seller.verificationStatus = 'verified';
+              await this.userRepository.update(user);
+              response.status(204).send('case 2');
+            }
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
             if (account.requirements && account.requirements.currently_due && account.requirements.currently_due.length) {
