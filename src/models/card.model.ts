@@ -9,7 +9,7 @@ export class Card {
   @property()
   last4: string;
   @property()
-  type: 'mastercard' | 'amex' | 'visa' | 'discover';
+  type: string;
   @property()
   expirationMonth: number;
   @property()
