@@ -132,7 +132,7 @@ export class AdminController {
       throw new HttpErrors.NotFound('Not Found');
     }
 
-    const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername } });
+    const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
 
     existingUsers.forEach(u => {
       this.userRepository.updateById(u.id, {
