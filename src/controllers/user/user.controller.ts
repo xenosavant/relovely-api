@@ -590,41 +590,36 @@ export class UserController {
           throw new HttpErrors.NotFound;
         }
         if (account.individual?.verification?.status === 'verified') {
-          let error = 'none';
-          try {
-            if (user.seller) {
-              user.seller.verificationStatus = 'verified';
-              await this.userRepository.update(user);
-            }
-          } catch (err) {
-            error = err;
-          }
-          response.status(200).send(JSON.stringify(user));
+          await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'verified', 'seller.missingInfo': [], 'seller.errors': [] } as any);
+          response.status(200).send('success');
+          break;
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
           if (reason.startsWith('rejected') || reason === 'listed') {
-            await this.userRepository.update(user);
-            response.status(204).send('case 2');
+            await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'rejected', 'seller.missingInfo': [], 'seller.errors': [] } as any);
+            response.status(200).send('success');
+            break;
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
             if (account.requirements && account.requirements.currently_due && account.requirements.currently_due.length) {
               if (user.seller) {
                 await this.userRepository.updateById(user.id, {
-                  'seller.verificationStatus': 'review', 'seller.missingInfo': account.requirements?.currently_due,
+                  'seller.missingInfo': account.requirements?.currently_due,
                   'seller.errors': account.requirements.errors?.map(e => e.reason) || []
                 } as any);
               }
             } else {
               await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'review', 'seller.missingInfo': [], 'seller.errors': [] } as any);
             }
-            response.status(200).send('case 3');
+            response.status(200).send('success');
+            break;
           }
         }
         break;
       }
       default:
-        response.status(200).send('default');
+        response.status(200).send('success');
         break;
     }
   }
