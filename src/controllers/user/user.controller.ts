@@ -591,7 +591,7 @@ export class UserController {
         }
         if (account.individual?.verification?.status === 'verified') {
           await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'verified', 'seller.missingInfo': [], 'seller.errors': [] } as any);
-          response.status(200).send('correct case');
+          response.status(200).send(user.id);
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
