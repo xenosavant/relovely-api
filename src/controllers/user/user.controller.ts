@@ -590,7 +590,7 @@ export class UserController {
           throw new HttpErrors.NotFound;
         }
         if (account.individual?.verification?.status === 'verified') {
-          await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'verified', 'seller.missingInfo': [], 'seller.errors': [] } as any);
+          await this.userRepository.updateById(user.id, { seller: { ...user.seller, verificationStatus: 'verified', missingInfo: [], errors: [] } });
           response.status(200).send(user.id);
         }
         const reason = account.requirements?.disabled_reason;
