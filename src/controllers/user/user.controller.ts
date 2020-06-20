@@ -23,7 +23,7 @@ import {
 } from '@loopback/rest';
 import { User, UserWithRelations, Product } from '../../models';
 import { UserRepository, ProductRepository } from '../../repositories';
-import { UserList, userListFields } from './response/user-list.interface';
+import { UserList, userListFields, userAuthFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
 import { authenticate } from '@loopback/authentication';
@@ -47,6 +47,8 @@ import { Review } from '../../models/review.model';
 import { UserReviewsResponse } from './response/user-reviews-response';
 import { SellerApplicationRequest } from './request/seller-application.request';
 import * as crypto from 'crypto';
+import { productListFields } from '../product/response/product-list.interface';
+import { httpsGetAsync } from '@loopback/testlab';
 
 export class UserController {
   constructor(
@@ -87,7 +89,7 @@ export class UserController {
   ): Promise<User> {
     let user;
     try {
-      user = await this.userRepository.findById(this.user.id as string, { fields: userDetailFields });
+      user = await this.userRepository.findById(this.user.id as string, { fields: userAuthFields });
       return user;
     } catch {
       throw new HttpErrors.Unauthorized;
@@ -114,6 +116,9 @@ export class UserController {
         fields: userDetailFields,
         include: [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }]
       });
+    if (!user) {
+      throw new HttpErrors.NotFound();
+    }
     const promiseDictionary: Record<string, any> = {};
     const response = user as any;
     const promises: Promise<any>[] = []
@@ -132,7 +137,7 @@ export class UserController {
         }) / user.reviews.length);
       }
       response.averageRating = rating;
-      response.products = response.products.filter((p: any) => p.active);
+      response.products = response.products ? response.products.filter((p: any) => p.active) : [];
 
       response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
       response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
@@ -141,9 +146,10 @@ export class UserController {
       delete response.products;
     }
     promises.push(
-      this.userRepository.find({
+      this.productsRepository.find({
         where: { id: { inq: user.favorites || [] } },
-        fields: userListFields
+        fields: productListFields,
+        include: [{ relation: 'seller', scope: { fields: userListFields } }]
       }).then(result => {
         promiseDictionary['favorites'] = result;
       }),
@@ -228,7 +234,7 @@ export class UserController {
       }
     }
     await this.userRepository.updateById(id, updates);
-    return await this.userRepository.findById(id, { fields: userDetailFields });
+    return await this.userRepository.findById(id, { fields: userAuthFields });
   }
 
   @authenticate('jwt')
@@ -419,7 +425,7 @@ export class UserController {
     });
     user.cards.push({ ...card, primary: true });
     await this.userRepository.updateById(this.user.id, { cards: user.cards });
-    return await this.userRepository.findById(this.user.id, { fields: userDetailFields });
+    return await this.userRepository.findById(this.user.id, { fields: userAuthFields });
   }
 
   @authenticate('jwt')
@@ -491,12 +497,18 @@ export class UserController {
     if (!user.stripeSellerId) {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
     }
-    if (user.firstName !== request.firstName || user.lastName != request.lastName) {
-      throw new HttpErrors.Forbidden('Name on account must match name on account');
-    }
     await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
-    const missing = user.seller?.missingInfo.splice(user.seller?.missingInfo.indexOf('external_acccount')) || [];
-    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, missingInfo: missing } });
+    if (user.seller && user.seller.missingInfo) {
+      if (user.seller.missingInfo.indexOf('external_account') > -1) {
+        const updates: string[] = [];
+        user.seller.missingInfo.forEach(item => {
+          if (item !== 'external_account') {
+            updates.push(item);
+          }
+        })
+        await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+      }
+    }
     return await this.userRepository.findById(this.user.id);
   }
 

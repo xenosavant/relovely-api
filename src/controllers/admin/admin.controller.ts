@@ -58,7 +58,7 @@ export class AdminController {
       throw new HttpErrors.Forbidden();
     }
     const existingEmail = await this.userRepository.findOne({ where: { email: request.email } });
-
+    const downcasedEmail = request.email.toLowerCase();
     if (existingEmail) {
       throw new HttpErrors.Conflict('Email already exists');
     }
@@ -68,13 +68,16 @@ export class AdminController {
     const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
       verficationCodeString = verificationCode.digest('hex');
 
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+
     await this.userRepository.create({
       active: true,
       firstName: request.firstName,
       lastName: request.lastName,
-      email: request.email,
+      email: downcasedEmail,
       type: 'seller',
       emailVerified: false,
+      stripeCustomerId: stripeId,
       instagramUsername: request.instagramUsername,
       username: request.instagramUsername,
       emailVerificationCode: verficationCodeString,
