@@ -254,7 +254,7 @@ export class OrderController {
     request.fromAddress = seller.seller?.address;
     const shipment = await this.easyPostService.createShipment(request);
     if (shipment.error) {
-      throw new HttpErrors.BadRequest('Something went wrong...please refresh the page');
+      throw new HttpErrors.BadRequest(shipment.error);
     }
     const taxRate = await this.taxService.calculateTax({
       toAddress: request.toAddress,
@@ -265,7 +265,7 @@ export class OrderController {
       categoryId: request.categoryId
     })
     if (taxRate.error) {
-      throw new HttpErrors.BadRequest('Something went wrong...please refresh the page');
+      throw new HttpErrors.BadRequest(taxRate.error);
     }
     return { ...shipment, taxRate: taxRate.tax }
   }

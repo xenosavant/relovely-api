@@ -111,49 +111,6 @@ export class FacebookController {
     return { user: user, jwt: jwt, existing: existing };
   }
 
-  // @post('/facebook/signin', {
-  //   responses: {
-  //     '200': {
-  //       description: 'User model instance',
-  //       content: {
-  //         'application/json': {
-  //           schema: getModelSchemaRef(AuthResponse)
-  //         }
-  //       },
-  //     },
-  //   },
-  // })
-  // async signin(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(OAuthRequest),
-  //       },
-  //     },
-  //   })
-  //   request: OAuthRequest,
-  // ): Promise<AuthResponse> {
-
-  //   const authResponse = await this.facebookService.getAccessToken(request.code, 'signin');
-  //   const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token);
-  //   const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
-  //   const user = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
-  //   if (!user) {
-  //     throw new HttpErrors.BadRequest('No user is linked to this facebook account. Please log in first and then link your facebook account');
-  //   }
-
-  //   await this.userRepository.updateById(user.id, {
-  //     facebookAuthToken: longLivedToken.access_token,
-  //     facebookUserId: fbuser.id
-  //   });
-
-  //   const userProfile = {} as AppUserProfile;
-  //   Object.assign(userProfile, { id: (user.id as string).toString(), username: user.username, type: 'facebook' });
-
-  //   const jwt = await this.tokenService.generateToken(userProfile);
-  //   return { user: user, jwt: jwt };
-  // }
-
   @post('/facebook/link', {
     responses: {
       '200': {

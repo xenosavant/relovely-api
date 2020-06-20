@@ -41,259 +41,259 @@ export class InstagramController {
     public sendGridService: SendgridService,
     @inject(SecurityBindings.USER, { optional: true }) private user: AppUserProfile,) { }
 
-  @post('/instagram/sell', {
-    responses: {
-      '204': {
-        description: 'Success'
-      },
-    },
-  })
-  async sell(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(OAuthRequest),
-        },
-      },
-    })
-    request: OAuthRequest,
-  ): Promise<void> {
+  // @post('/instagram/sell', {
+  //   responses: {
+  //     '204': {
+  //       description: 'Success'
+  //     },
+  //   },
+  // })
+  // async sell(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(OAuthRequest),
+  //       },
+  //     },
+  //   })
+  //   request: OAuthRequest,
+  // ): Promise<void> {
 
-    if (!request.email) {
-      throw new HttpErrors.BadRequest('Email is required');
-    }
+  //   if (!request.email) {
+  //     throw new HttpErrors.BadRequest('Email is required');
+  //   }
 
-    let data: BasicData;
-    try {
-      data = await this.instagramService.getBasicUserData(request.code);
-    }
-    catch {
-      throw new HttpErrors.BadRequest('Invalid account')
-    }
+  //   let data: BasicData;
+  //   try {
+  //     data = await this.instagramService.getBasicUserData(request.code);
+  //   }
+  //   catch {
+  //     throw new HttpErrors.BadRequest('Invalid account')
+  //   }
 
-    const longLivedToken = request.code
-    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
-
-
-    if (existingUser) {
-      if (existingUser.seller && existingUser.seller.approved) {
-        throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
-      }
-    }
-
-    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
-
-    if (existingEmail) {
-      throw new HttpErrors.Conflict('That email is not available.');
-    }
-
-    const stripeId = await this.stripeService.createCustomer(request.email as string);
-
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
-
-    const user = await this.userRepository.create({
-      type: 'seller',
-      username: data.username,
-      email: request.email as string,
-      instagramAuthToken: longLivedToken,
-      instagramUsername: data.username,
-      emailVerificationCode: verficationCodeString,
-      passwordVerificationCode: verficationCodeString,
-      instagramUserId: data.id,
-      emailVerified: false,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      seller: {
-        verificationStatus: 'unverified',
-        missingInfo: ['external_account'],
-        errors: []
-      },
-      stripeCustomerId: stripeId
-    });
-
-    // TODO: remove this in production
-    await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
-  }
+  //   const longLivedToken = request.code
+  //   const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
 
 
-  @post('/instagram/signup', {
-    responses: {
-      '204': {
-        description: 'Success'
-      },
-    },
-  })
-  async signup(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(OAuthRequest),
-        },
-      },
-    })
-    request: OAuthRequest,
-  ): Promise<void> {
+  //   if (existingUser) {
+  //     if (existingUser.seller && existingUser.seller.approved) {
+  //       throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+  //     }
+  //   }
 
-    if (!request.email) {
-      throw new HttpErrors.BadRequest('Email is required');
-    }
+  //   const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
 
-    const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
+  //   if (existingEmail) {
+  //     throw new HttpErrors.Conflict('That email is not available.');
+  //   }
 
-    if (existingEmail) {
-      throw new HttpErrors.Conflict('That email is not available.');
-    }
+  //   const stripeId = await this.stripeService.createCustomer(request.email as string);
 
-    let data: BasicData;
-    try {
-      data = await this.instagramService.getBasicUserData(request.code);
-    }
-    catch (err) {
-      throw new HttpErrors.BadRequest('Invalid account')
-    }
+  //   const rand = Math.random().toString();
+  //   const now = new Date();
+  //   const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+  //     verficationCodeString = verificationCode.digest('hex');
 
-    const longLivedToken = request.code
-    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+  //   const user = await this.userRepository.create({
+  //     type: 'seller',
+  //     username: data.username,
+  //     email: request.email as string,
+  //     instagramAuthToken: longLivedToken,
+  //     instagramUsername: data.username,
+  //     emailVerificationCode: verficationCodeString,
+  //     passwordVerificationCode: verficationCodeString,
+  //     instagramUserId: data.id,
+  //     emailVerified: false,
+  //     favorites: [],
+  //     followers: [],
+  //     following: [],
+  //     addresses: [],
+  //     cards: [],
+  //     preferences: {
+  //       sizes: [],
+  //       colors: [],
+  //       prices: []
+  //     },
+  //     seller: {
+  //       verificationStatus: 'unverified',
+  //       missingInfo: ['external_account'],
+  //       errors: []
+  //     },
+  //     stripeCustomerId: stripeId
+  //   });
 
-    if (existingUser) {
-      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
-    }
-
-    const stripeId = await this.stripeService.createCustomer(request.email as string);
-
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
-
-    const user = await this.userRepository.create({
-      type: 'member',
-      username: data.username,
-      email: request.email as string,
-      instagramAuthToken: longLivedToken,
-      instagramUsername: data.username,
-      emailVerificationCode: verficationCodeString,
-      instagramUserId: data.id,
-      emailVerified: false,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      stripeCustomerId: stripeId
-    });
-
-    // TODO: remove this in production
-    await this.sendGridService.sendEmail(user.email as string, `Welcome to Relovely!`,
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
-  }
-
-  @authenticate('jwt')
-  @post('/instagram/link', {
-    responses: {
-      '204': {
-        description: 'Success'
-      },
-    },
-  })
-  async link(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(InstagramTokenRequest),
-        },
-      },
-    })
-    request: InstagramTokenRequest,
-  ): Promise<User> {
-
-    let data: BasicData,
-      longLivedToken: LongLivedTokenData;
-    try {
-      let authResponse: AuthData;
-      authResponse = await this.instagramService.getAccessTokenLink(request.token);
-      data = await this.instagramService.getBasicUserData(authResponse.access_token);
-      longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
-    }
-    catch (error) {
-      throw new HttpErrors.BadRequest(error);
-    }
-
-    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
-
-    if (existingUser && existingUser.id !== this.user.id) {
-      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
-    }
-
-    const profile = this.user;
-    await this.userRepository.updateById(this.user.id, {
-      instagramAuthToken: longLivedToken.access_token,
-      instagramUsername: data.username,
-      username: data.username,
-      usernameReset: false
-    });
-
-    return await this.userRepository.findById(this.user.id);
-  }
+  //   // TODO: remove this in production
+  //   await this.sendGridService.sendEmail(user.email as string, `You're Approved To Sell On Relovely!`,
+  //     `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${verficationCodeString}">here</a> to get started.`);
+  // }
 
 
-  @post('/instagram/token', {
-    responses: {
-      '204': {
-        description: 'Success'
-      },
-    },
-  })
-  async token(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(InstagramTokenRequest),
-        },
-      },
-    })
-    request: InstagramTokenRequest,
-  ): Promise<InstagramTokenResponse> {
+  // @post('/instagram/signup', {
+  //   responses: {
+  //     '204': {
+  //       description: 'Success'
+  //     },
+  //   },
+  // })
+  // async signup(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(OAuthRequest),
+  //       },
+  //     },
+  //   })
+  //   request: OAuthRequest,
+  // ): Promise<void> {
 
-    let data: BasicData,
-      longLivedToken: LongLivedTokenData;
-    try {
-      let authResponse: AuthData;
-      if (request.type === 'member') {
-        authResponse = await this.instagramService.getAccessTokenMember(request.token);
-      } else {
-        authResponse = await this.instagramService.getAccessTokenSeller(request.token);
-      }
-      data = await this.instagramService.getBasicUserData(authResponse.access_token);
-      longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
-    }
-    catch (error) {
-      throw new HttpErrors.BadRequest('Invalid account.')
-    }
-    const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+  //   if (!request.email) {
+  //     throw new HttpErrors.BadRequest('Email is required');
+  //   }
 
-    if (existingUser) {
-      throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
-    }
+  //   const existingEmail = (await this.userRepository.findOne({ where: { email: request.email } })) as UserWithRelations;
 
-    return { token: longLivedToken.access_token, username: data.username };
+  //   if (existingEmail) {
+  //     throw new HttpErrors.Conflict('That email is not available.');
+  //   }
 
-  }
+  //   let data: BasicData;
+  //   try {
+  //     data = await this.instagramService.getBasicUserData(request.code);
+  //   }
+  //   catch (err) {
+  //     throw new HttpErrors.BadRequest('Invalid account')
+  //   }
+
+  //   const longLivedToken = request.code
+  //   const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+  //   if (existingUser) {
+  //     throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+  //   }
+
+  //   const stripeId = await this.stripeService.createCustomer(request.email as string);
+
+  //   const rand = Math.random().toString();
+  //   const now = new Date();
+  //   const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+  //     verficationCodeString = verificationCode.digest('hex');
+
+  //   const user = await this.userRepository.create({
+  //     type: 'member',
+  //     username: data.username,
+  //     email: request.email as string,
+  //     instagramAuthToken: longLivedToken,
+  //     instagramUsername: data.username,
+  //     emailVerificationCode: verficationCodeString,
+  //     instagramUserId: data.id,
+  //     emailVerified: false,
+  //     favorites: [],
+  //     followers: [],
+  //     following: [],
+  //     addresses: [],
+  //     cards: [],
+  //     preferences: {
+  //       sizes: [],
+  //       colors: [],
+  //       prices: []
+  //     },
+  //     stripeCustomerId: stripeId
+  //   });
+
+  //   // TODO: remove this in production
+  //   await this.sendGridService.sendEmail(user.email as string, `Welcome to Relovely!`,
+  //     `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${verficationCodeString}">here</a> to get started.`);
+  // }
+
+  // @authenticate('jwt')
+  // @post('/instagram/link', {
+  //   responses: {
+  //     '204': {
+  //       description: 'Success'
+  //     },
+  //   },
+  // })
+  // async link(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(InstagramTokenRequest),
+  //       },
+  //     },
+  //   })
+  //   request: InstagramTokenRequest,
+  // ): Promise<User> {
+
+  //   let data: BasicData,
+  //     longLivedToken: LongLivedTokenData;
+  //   try {
+  //     let authResponse: AuthData;
+  //     authResponse = await this.instagramService.getAccessTokenLink(request.token);
+  //     data = await this.instagramService.getBasicUserData(authResponse.access_token);
+  //     longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
+  //   }
+  //   catch (error) {
+  //     throw new HttpErrors.BadRequest(error);
+  //   }
+
+  //   const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+  //   if (existingUser && existingUser.id !== this.user.id) {
+  //     throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+  //   }
+
+  //   const profile = this.user;
+  //   await this.userRepository.updateById(this.user.id, {
+  //     instagramAuthToken: longLivedToken.access_token,
+  //     instagramUsername: data.username,
+  //     username: data.username,
+  //     usernameReset: false
+  //   });
+
+  //   return await this.userRepository.findById(this.user.id);
+  // }
+
+
+  // @post('/instagram/token', {
+  //   responses: {
+  //     '204': {
+  //       description: 'Success'
+  //     },
+  //   },
+  // })
+  // async token(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(InstagramTokenRequest),
+  //       },
+  //     },
+  //   })
+  //   request: InstagramTokenRequest,
+  // ): Promise<InstagramTokenResponse> {
+
+  //   let data: BasicData,
+  //     longLivedToken: LongLivedTokenData;
+  //   try {
+  //     let authResponse: AuthData;
+  //     if (request.type === 'member') {
+  //       authResponse = await this.instagramService.getAccessTokenMember(request.token);
+  //     } else {
+  //       authResponse = await this.instagramService.getAccessTokenSeller(request.token);
+  //     }
+  //     data = await this.instagramService.getBasicUserData(authResponse.access_token);
+  //     longLivedToken = await this.instagramService.getlongLivedAccessToken(authResponse.access_token);
+  //   }
+  //   catch (error) {
+  //     throw new HttpErrors.BadRequest('Invalid account.')
+  //   }
+  //   const existingUser = (await this.userRepository.findOne({ where: { instagramUsername: data.username } })) as UserWithRelations;
+
+  //   if (existingUser) {
+  //     throw new HttpErrors.Conflict('That Instagram account is already linked to an existing user');
+  //   }
+
+  //   return { token: longLivedToken.access_token, username: data.username };
+
+  // }
 }
