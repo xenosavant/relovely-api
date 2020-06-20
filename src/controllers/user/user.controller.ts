@@ -126,7 +126,7 @@ export class UserController {
       promises.push(
         this.userRepository.find({
           where: { id: { inq: user.followers || [] } },
-          fields: productListFields
+          fields: userListFields
         }).then(result => {
           promiseDictionary['followers'] = result;
         }));
@@ -137,7 +137,7 @@ export class UserController {
         }) / user.reviews.length);
       }
       response.averageRating = rating;
-      response.products = response.products.filter((p: any) => p.active);
+      response.products = response.products ? response.products.filter((p: any) => p.active) : [];
 
       response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
       response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
@@ -498,8 +498,15 @@ export class UserController {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
     }
     await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
-    const missing = user.seller?.missingInfo.splice(user.seller?.missingInfo.indexOf('external_acccount')) || [];
-    await this.userRepository.updateById(this.user.id as string, { seller: { ...user.seller, missingInfo: missing } });
+    if (user.seller?.missingInfo.indexOf('external_account') as any > 0) {
+      const updates: string[] = [];
+      user.seller?.missingInfo.forEach(item => {
+        if (item !== 'external_account') {
+          updates.push(item);
+        }
+      })
+      await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+    }
     return await this.userRepository.findById(this.user.id);
   }
 
