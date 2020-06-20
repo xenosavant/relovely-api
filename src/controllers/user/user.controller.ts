@@ -385,7 +385,8 @@ export class UserController {
     await this.userRepository.updateById(this.user.id as string, {
       firstName: request.firstName,
       lastName: request.lastName,
-      stripeSellerId: account.id, seller: {
+      stripeCustomerId: account.id,
+      seller: {
         verificationStatus: 'review',
         address: request.address,
         missingInfo: account.requirements?.currently_due || [],
