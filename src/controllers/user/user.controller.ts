@@ -234,7 +234,7 @@ export class UserController {
       }
     }
     await this.userRepository.updateById(id, updates);
-    return await this.userRepository.findById(id, { fields: userDetailFields });
+    return await this.userRepository.findById(id, { fields: userAuthFields });
   }
 
   @authenticate('jwt')
@@ -425,7 +425,7 @@ export class UserController {
     });
     user.cards.push({ ...card, primary: true });
     await this.userRepository.updateById(this.user.id, { cards: user.cards });
-    return await this.userRepository.findById(this.user.id, { fields: userDetailFields });
+    return await this.userRepository.findById(this.user.id, { fields: userAuthFields });
   }
 
   @authenticate('jwt')
