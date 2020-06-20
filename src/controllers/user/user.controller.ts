@@ -357,6 +357,7 @@ export class UserController {
         freeSales: 3,
         verificationStatus: 'unverified',
         address: request.address,
+        approved: false,
         socialChannels: channels
       }
     });
