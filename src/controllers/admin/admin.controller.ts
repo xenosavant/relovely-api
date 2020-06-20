@@ -171,12 +171,7 @@ export class AdminController {
       throw new HttpErrors.Forbidden();
     }
     return await this.userRepository.find({
-      where: {
-        and: [
-          { type: 'seller' },
-          { 'seller.approved': false } as any
-        ]
-      }
+      where: { type: 'seller', 'seller.approved': false } as any
     });
   }
 
