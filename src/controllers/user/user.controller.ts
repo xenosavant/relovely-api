@@ -591,13 +591,13 @@ export class UserController {
         }
         if (account.individual?.verification?.status === 'verified') {
           await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'verified', 'seller.missingInfo': [], 'seller.errors': [] } as any);
-          response.status(200).send('success');
+          response.status(200).send('correct case');
         }
         const reason = account.requirements?.disabled_reason;
         if (reason) {
           if (reason.startsWith('rejected') || reason === 'listed') {
             await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'rejected', 'seller.missingInfo': [], 'seller.errors': [] } as any);
-            response.status(200).send('success');
+            response.status(204).send('case 2');
           }
           if (['requirements.pending_verification', 'under_review', 'other', 'requirements.past_due'].indexOf(reason) > -1) {
             if (account.requirements && account.requirements.currently_due && account.requirements.currently_due.length) {
@@ -610,13 +610,13 @@ export class UserController {
             } else {
               await this.userRepository.updateById(user.id, { 'seller.verificationStatus': 'review', 'seller.missingInfo': [], 'seller.errors': [] } as any);
             }
-            response.status(200).send('success');
+            response.status(200).send('case 3');
           }
         }
         break;
       }
       default:
-        response.status(200).send('success');
+        response.status(200).send('default');
         break;
     }
   }
