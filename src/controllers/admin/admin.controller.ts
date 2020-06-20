@@ -94,6 +94,7 @@ export class AdminController {
       seller: {
         missingInfo: ['external_account'],
         errors: [],
+        approved: false,
         freeSales: 3,
         verificationStatus: 'unverified',
         address: request.address
@@ -173,7 +174,7 @@ export class AdminController {
       where: {
         and: [
           { type: 'seller' },
-          { 'seller.approved': { exists: false } } as any
+          { 'seller.approved': false } as any
         ]
       }
     });
