@@ -323,7 +323,7 @@ export class ProductController {
     @param.path.string('id') id: string
   ): Promise<void> {
     const user = await this.userRepository.findById(this.user.id, { fields: { favorites: true } });
-    if (!user.favorites.includes(ObjectId(id))) {
+    if (!user.favorites.includes(id)) {
       await this.userRepository.updateById(this.user.id, { $push: { favorites: ObjectId(id) } } as any);
     } else {
       await this.userRepository.updateById(this.user.id, { $pull: { favorites: ObjectId(id) } } as any);
