@@ -382,12 +382,19 @@ export class UserController {
     request: SellerAccountRequest,
   ): Promise<User> {
     const account = await this.stripeService.createSeller(request, this.request.ip);
+    const verificationStatus = account.individual?.verification?.status;
+    let currentStatus: string;
+    if (verificationStatus === 'verified') {
+      currentStatus = 'verified';
+    } else {
+      currentStatus = 'review'
+    }
     await this.userRepository.updateById(this.user.id as string, {
       firstName: request.firstName,
       lastName: request.lastName,
-      stripeCustomerId: account.id,
+      stripeSellerId: account.id,
       seller: {
-        verificationStatus: 'review',
+        verificationStatus: currentStatus,
         address: request.address,
         missingInfo: account.requirements?.currently_due || [],
         errors: account.requirements?.errors?.map(e => e.reason) || []

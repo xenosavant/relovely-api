@@ -139,9 +139,18 @@ export class AdminController {
         username: undefined,
         usernameReset: true
       });
-    })
+    });
 
-    await this.userRepository.updateById(user.id, { active: request.approved, username: user.instagramUsername, 'seller.approved': request.approved, 'seller.feautured': request.featured } as any);
+
+    const stripeId = await this.stripeService.createCustomer(user.email);
+
+    await this.userRepository.updateById(user.id,
+      {
+        active: request.approved,
+        username: user.instagramUsername,
+        'seller.approved': request.approved,
+        'seller.feautured': request.featured
+      } as any);
 
     await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
       `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${user.emailVerificationCode}">here</a> to get started.`);
