@@ -36,7 +36,6 @@ import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
 import { TaxService } from '../../services/tax/tax.service';
 import { SellerDetails } from '../../models/seller-details';
 
-@authenticate('jwt')
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -57,6 +56,7 @@ export class OrderController {
     public taxService: TaxService
   ) { }
 
+  @authenticate('jwt')
   @post('/products/{id}/orders', {
     responses: {
       '200': {
@@ -76,7 +76,7 @@ export class OrderController {
     }
     if (!product.sold) {
       const shipTo = buyer.addresses.find(a => a.primary) as Address;
-      const seller = await this.userRepository.findById(product.sellerId, { fields: { stripeSellerId: true, seller: true } });
+      const seller = await this.userRepository.findById(product.sellerId);
       const shipment = await this.easyPostService.purchaseShipment(request.shipmentId, request.rateId);
       let sellerFee = 0,
         transferFee = 0,
@@ -167,6 +167,7 @@ export class OrderController {
     }
   }
 
+  @authenticate('jwt')
   @get('/orders', {
     responses: {
       '200': {
@@ -207,6 +208,7 @@ export class OrderController {
     }
   }
 
+  @authenticate('jwt')
   @get('/orders/{id}', {
     responses: {
       '200': {

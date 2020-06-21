@@ -357,7 +357,7 @@ export class UserController {
         errors: [],
         freeSales: 3,
         verificationStatus: 'unverified',
-        address: request.address,
+        address: { name: request.firstName + ' ' + request.lastName, ...request.address },
         approved: false,
         socialChannels: channels
       }
