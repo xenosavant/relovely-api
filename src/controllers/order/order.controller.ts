@@ -84,7 +84,11 @@ export class OrderController {
       if (seller.seller?.freeSales && seller.seller.freeSales > 0) {
         freeSalesChanged = true;
       } else {
-        sellerFee = Math.round(product.price * .1);
+        if (product.price < 500) {
+          sellerFee = 50;
+        } else {
+          sellerFee = Math.round(product.price * .1);
+        }
         transferFee = Math.round((product.price * .029));
       }
 
@@ -300,6 +304,8 @@ export class OrderController {
         await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: moment().toDate() });
       } else if (['error', 'failure'].includes(event.result.status)) {
         await this.orderRepository.updateById(order.id, { status: 'error' });
+      } else {
+        await this.orderRepository.updateById(order.id, { status: 'purchased' });
       }
     }
   }
