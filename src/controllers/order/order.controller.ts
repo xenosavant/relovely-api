@@ -304,8 +304,8 @@ export class OrderController {
         await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: moment().toDate() });
       } else if (['error', 'failure'].includes(event.result.status)) {
         await this.orderRepository.updateById(order.id, { status: 'error' });
-      } else {
-        await this.orderRepository.updateById(order.id, { status: 'purchased' });
+      } else if (event.description === 'tracker.updated') {
+        await this.orderRepository.updateById(order.id, { status: 'purchased', purchaseDate: moment().toDate() });
       }
     }
   }
