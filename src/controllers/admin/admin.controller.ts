@@ -146,6 +146,7 @@ export class AdminController {
 
     await this.userRepository.updateById(user.id,
       {
+        stripeCustomerId: stripeId,
         active: request.approved,
         username: user.instagramUsername,
         'seller.approved': request.approved,
