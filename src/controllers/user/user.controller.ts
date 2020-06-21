@@ -341,6 +341,7 @@ export class UserController {
       type: 'seller',
       emailVerified: false,
       emailVerificationCode: verficationCodeString,
+      instagramUsername: request.instagramUsername,
       favorites: [],
       followers: [],
       following: [],
