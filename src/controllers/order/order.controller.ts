@@ -276,6 +276,22 @@ export class OrderController {
     return { ...shipment, taxRate: taxRate.tax }
   }
 
+  @authenticate('jwt')
+  @post('/orders/{id}/ship', {
+    responses: {
+      '204': {
+        description: 'Successul update'
+      },
+    },
+  })
+  async ship(@param.path.string('id') id: string): Promise<void> {
+    const order = await this.orderRepository.findById(id);
+    if (order.sellerId.toString() !== this.user.id) {
+      throw new HttpErrors.Forbidden();
+    }
+    this.orderRepository.updateById(id, { labelPrinted: true })
+  }
+
   @post('/shipments/easypost-webhook', {
     responses: {
       '204': {
@@ -309,9 +325,10 @@ export class OrderController {
   }
 
   async generateOrderNumber(): Promise<string> {
-    const randomString = this.randomString(4, this.charString);
+    const randomString = this.randomString(2, this.charString);
+    const randomNumbers = Math.round(Math.random() * 10);
     const date = moment().format('YYMMDD');
-    const orderNumber = date + '-' + randomString;
+    const orderNumber = date + '-' + randomNumbers + randomString;
     const existing = await this.orderRepository.count({ orderNumber: orderNumber });
     if (existing.count > 0) {
       return this.generateOrderNumber();

@@ -37,6 +37,7 @@ export class AdminController {
   @authenticate('jwt')
   @post('/admin/create-seller')
   async create(
+    @requestBody()
     request: SellerApplicationRequest
   ): Promise<void> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
@@ -91,6 +92,7 @@ export class AdminController {
   @authenticate('jwt')
   @post('/admin/approve-seller')
   async approve(
+    @requestBody()
     request: ApproveSellerRequest,
   ): Promise<void> {
 
@@ -102,6 +104,10 @@ export class AdminController {
     const user = await this.userRepository.findOne({ where: { email: request.email } });
     if (!user || !user.seller) {
       throw new HttpErrors.NotFound('Not Found');
+    }
+
+    if (/@/.test(user.instagramUsername as string)) {
+      user.instagramUsername = user.instagramUsername?.replace(/@/, '');
     }
 
     const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
@@ -121,6 +127,7 @@ export class AdminController {
         stripeCustomerId: stripeId,
         active: request.approved,
         username: user.instagramUsername,
+        instagramUsername: user.instagramUsername,
         'seller.approved': request.approved,
         'seller.feautured': request.featured
       } as any);

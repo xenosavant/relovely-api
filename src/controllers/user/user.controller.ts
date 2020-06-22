@@ -21,8 +21,8 @@ import {
   HttpErrors,
   RestBindings
 } from '@loopback/rest';
-import { User, UserWithRelations, Product } from '../../models';
-import { UserRepository, ProductRepository } from '../../repositories';
+import { User, UserWithRelations, Product, Order } from '../../models';
+import { UserRepository, ProductRepository, OrderRepository } from '../../repositories';
 import { UserList, userListFields, userAuthFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
@@ -56,6 +56,8 @@ export class UserController {
     public userRepository: UserRepository,
     @repository(ProductRepository)
     public productsRepository: ProductRepository,
+    @repository(OrderRepository)
+    public orderRepository: OrderRepository,
     @inject(SecurityBindings.USER, { optional: true })
     private user: AppUserProfile,
     @service(InstagramService)
@@ -90,6 +92,12 @@ export class UserController {
     let user;
     try {
       user = await this.userRepository.findById(this.user.id as string, { fields: userAuthFields });
+      if (user.type === 'seller') {
+        const unshippedSales = await this.orderRepository.find({ where: { labelPrinted: { exists: false }, status: 'purchased' }, fields: { id: true } });
+        if (unshippedSales.length !== 0) {
+          user.sales = unshippedSales;
+        }
+      }
       return user;
     } catch {
       throw new HttpErrors.Unauthorized;

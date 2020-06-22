@@ -149,6 +149,12 @@ export class Order extends Entity {
   })
   public paymentType: string;
 
+  @property({
+    type: 'boolean',
+    required: false
+  })
+  public labelPrinted: boolean;
+
   @hasOne(() => Review, { keyTo: 'orderId' })
   review: Review;
 }
