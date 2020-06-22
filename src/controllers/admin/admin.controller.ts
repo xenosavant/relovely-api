@@ -35,22 +35,8 @@ export class AdminController {
 
 
   @authenticate('jwt')
-  @post('/admin/create-seller', {
-    responses: {
-      '204': {
-        description: 'Seller POST success',
-      },
-    },
-  })
+  @post('/admin/create-seller')
   async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(SellerApplicationRequest),
-          optional: ['address']
-        },
-      },
-    })
     request: SellerApplicationRequest
   ): Promise<void> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
@@ -103,22 +89,8 @@ export class AdminController {
   }
 
   @authenticate('jwt')
-  @post('/admin/approve-seller', {
-    responses: {
-      '204': {
-        description: 'Seller Approve Success',
-      },
-    },
-  })
+  @post('/admin/approve-seller')
   async approve(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(ApproveSellerRequest),
-          optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction']
-        },
-      },
-    })
     request: ApproveSellerRequest,
   ): Promise<void> {
 
@@ -159,21 +131,7 @@ export class AdminController {
 
 
   @authenticate('jwt')
-  @get('/admin/sellers', {
-    responses: {
-      '200': {
-        description: 'Array of Product model instances',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'array',
-              items: getModelSchemaRef(User, { includeRelations: true }),
-            },
-          },
-        },
-      },
-    },
-  })
+  @get('/admin/sellers')
   async favorites(
   ): Promise<User[]> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });

@@ -23,6 +23,7 @@ export class CloudinaryService {
     const payload: any = { timestamp: timestamp, folder: folder, upload_preset: preset };
     if (publicId) {
       payload['public_id'] = publicId;
+      payload['unique_filename'] = 'false';
     }
     return await v2.utils.api_sign_request(payload, this.secret);
   }
