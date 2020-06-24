@@ -34,7 +34,7 @@ import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { userUpdateFields } from './user-update-fields';
-import { InstagramService } from '../../services';
+import { InstagramService, SendgridService } from '../../services';
 import { SellerAccountRequest } from './request/seller-account-request.interface';
 import { StripeService } from '../../services/stripe/stripe.service';
 import { BankAccountRequest } from './request/bank-account.request.interface';
@@ -49,6 +49,7 @@ import { SellerApplicationRequest } from './request/seller-application.request';
 import * as crypto from 'crypto';
 import { productListFields } from '../product/response/product-list.interface';
 import { httpsGetAsync } from '@loopback/testlab';
+import { SupportRequest } from './request/support.request';
 
 export class UserController {
   constructor(
@@ -67,7 +68,9 @@ export class UserController {
     @inject(RestBindings.Http.REQUEST)
     private request: any,
     @inject(FILE_UPLOAD_SERVICE)
-    private handler: FileUploadHandler
+    private handler: FileUploadHandler,
+    @service(SendgridService)
+    public sendGridService: SendgridService
   ) { }
 
   @authenticate('jwt')
@@ -550,6 +553,27 @@ export class UserController {
     return await this.userRepository.findById(this.user.id);
   }
 
+  @post('/users/support', {
+    responses: {
+      '204': {
+        description: 'Support success',
+      },
+    },
+  })
+  async support(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SupportRequest),
+        },
+      },
+    })
+    request: SupportRequest
+  ): Promise<void> {
+    await this.sendGridService.sendEmail('support@relovely.com',
+      `Support ticket`,
+      request.body, request.email);
+  }
 
   @authenticate('jwt')
   @post('/users/add-document', {
@@ -660,4 +684,6 @@ export class UserController {
         break;
     }
   }
+
+
 }
