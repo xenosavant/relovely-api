@@ -94,7 +94,7 @@ export class OrderController {
 
       const tax = await this.taxService.calculateTax({
         toAddress: shipTo,
-        fromAddress: (seller.seller as SellerDetails).address as Address,
+        fromAddress: seller.returnAddress as Address,
         shippingCost: shipment.shippingCost,
         price: product.price,
         sellerId: seller.id as string,
@@ -257,7 +257,7 @@ export class OrderController {
     request: PreviewShipmentRequest
   ): Promise<PreviewShipmentResponse> {
     const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
-    request.fromAddress = seller.seller?.address;
+    request.fromAddress = seller.returnAddress
     const shipment = await this.easyPostService.createShipment(request);
     if (shipment.error) {
       throw new HttpErrors.BadRequest(shipment.error);

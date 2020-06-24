@@ -84,7 +84,7 @@ export class AdminController {
         approved: false,
         freeSales: 3,
         verificationStatus: 'unverified',
-        address: request.address
+        address: { ...request.address, name: request.firstName + request.lastName }
       }
     });
   }

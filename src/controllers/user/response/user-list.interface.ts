@@ -9,14 +9,14 @@ export interface UserList {
 
 export const userAuthFields = {
   passwordHash: false, instagramAuthToken:
-    false, instagramUserId: false, signedInWithInstagram: false,
+    false, instagramUserId: false,
   facebookAuthToken: false, emailVerificationCode: false,
   passwordVerificationCode: false
 };
 
 export const userDetailFields = {
   passwordHash: false, instagramAuthToken:
-    false, instagramUserId: false, signedInWithInstagram: false,
+    false, instagramUserId: false,
   facebookAuthToken: false, emailVerificationCode: false,
   passwordVerificationCode: false, cards: false, addresses: false,
   preferences: false, stripeCustomerId: false, email: false

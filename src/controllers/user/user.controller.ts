@@ -119,11 +119,25 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string
   ): Promise<UserDetail> {
-    const user: UserWithRelations = await this.userRepository.findById(id,
-      {
-        fields: userDetailFields,
-        include: [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }]
-      });
+
+    if (!id) {
+      throw new HttpErrors.BadRequest();
+    }
+
+    let user: UserWithRelations | null = null;
+    const include = [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }];
+    if (/^[a-f\d]{24}$/i.test(id)) {
+      user = await this.userRepository.findById(id,
+        {
+          fields: userDetailFields,
+          include: include
+        });
+    }
+
+    if (!user) {
+      user = await this.userRepository.findOne({ where: { username: id }, fields: userDetailFields, include: include });
+    }
+
     if (!user) {
       throw new HttpErrors.NotFound();
     }
@@ -235,7 +249,13 @@ export class UserController {
         if (updates['username'] !== user.username) {
           const existingUsername = await this.userRepository.findOne({ where: { username: username } });
           if (existingUsername) {
-            throw new HttpErrors.Conflict('Username already exists. If you own that username on Instagram, claim it by going to Account → Settings → Instagram');
+            throw new HttpErrors.Conflict('Username already exists.');
+          }
+          if (!/^[0-9A-Za-z._]*$/g.test(username)) {
+            throw new HttpErrors.Conflict('Invalid username, must contain only letters, numbers, periods, and undescores.');
+          }
+          if (username.length > 30) {
+            throw new HttpErrors.Conflict('Invalid username, must be 30 characters or less');
           }
         }
         updates['usernameReset'] = false;
@@ -365,7 +385,7 @@ export class UserController {
         errors: [],
         freeSales: 3,
         verificationStatus: 'unverified',
-        address: { name: request.firstName + ' ' + request.lastName, ...request.address },
+        address: { ...request.address, name: request.firstName + ' ' + request.lastName },
         approved: false,
         socialChannels: channels
       }
