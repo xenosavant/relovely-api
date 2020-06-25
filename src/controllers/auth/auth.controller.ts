@@ -16,6 +16,7 @@ import { ResetPasswordRequest } from "./reset-password-request";
 import { PasswordEmailRequest } from "./password-email-request";
 import { StripeService } from '../../services/stripe/stripe.service';
 import { User } from '../../models';
+import { sleep } from '../../helpers/sleep';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -120,6 +121,9 @@ export class AuthController {
     request: AuthRequest,
   ): Promise<AuthResponse> {
 
+    if (!request.email) {
+      throw new HttpErrors.Forbidden('Bad Request');
+    }
     const downcasedEmail = request.email.toLowerCase();
 
     const user = await this.credentialService.verifyCredentials({ identifier: downcasedEmail, password: request.password });
@@ -214,10 +218,14 @@ export class AuthController {
     })
     request: PasswordEmailRequest,
   ): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { email: request.identifier } });
+    if (!request.identifier) {
+      throw new HttpErrors.Forbidden();
+    }
+    const user = await this.userRepository.findOne({ where: { email: request.identifier.toLowerCase() } });
 
     if (!user) {
-      throw new HttpErrors.Forbidden();
+      await sleep(2000);
+      throw new HttpErrors.Forbidden('That email does not exist in our system.');
     }
 
     const rand = Math.random().toString();
