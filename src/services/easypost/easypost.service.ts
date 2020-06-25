@@ -56,6 +56,7 @@ export class EasyPostService {
   createShipment(request: PreviewShipmentRequest): Promise<PreviewShipmentResponse> {
 
     const to = new easypost.Address({
+      name: request.toAddress.name,
       street1: request.toAddress.line1,
       street2: request.toAddress.line2,
       city: request.toAddress.city,
@@ -63,6 +64,7 @@ export class EasyPostService {
       zip: request.toAddress.zip
     });
     const from = new easypost.Address({
+      name: request.fromAddress?.name,
       street1: request.fromAddress?.line1,
       street2: request.fromAddress?.line2,
       city: request.fromAddress?.city,
@@ -121,6 +123,7 @@ export class EasyPostService {
             shipmentId: shipment.id,
             shippingCost: parseFloat(rate.rate) * 100,
             address: {
+              name: shipment.to_address.name,
               line1: shipment.to_address.street1,
               line2: shipment.to_address.street2,
               city: shipment.to_address.city,

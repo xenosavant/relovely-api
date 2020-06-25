@@ -273,7 +273,7 @@ export class ProductController {
       fields: productDetailFields, include: [{ relation: 'seller', scope: { fields: userListFields } }]
     }) as any;
 
-    const more = (await this.productRepository.find({ where: { sellerId: product.sellerId, id: { neq: ObjectId(id) } }, fields: productListFields })) as unknown;
+    const more = (await this.productRepository.find({ where: { sellerId: product.sellerId, id: { neq: ObjectId(id), }, active: true, sold: false }, fields: productListFields })) as unknown;
 
     if (!product.active) {
       throw new HttpErrors.NotFound();

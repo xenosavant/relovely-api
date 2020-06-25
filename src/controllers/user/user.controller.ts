@@ -34,7 +34,7 @@ import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { userUpdateFields } from './user-update-fields';
-import { InstagramService } from '../../services';
+import { InstagramService, SendgridService } from '../../services';
 import { SellerAccountRequest } from './request/seller-account-request.interface';
 import { StripeService } from '../../services/stripe/stripe.service';
 import { BankAccountRequest } from './request/bank-account.request.interface';
@@ -49,6 +49,7 @@ import { SellerApplicationRequest } from './request/seller-application.request';
 import * as crypto from 'crypto';
 import { productListFields } from '../product/response/product-list.interface';
 import { httpsGetAsync } from '@loopback/testlab';
+import { SupportRequest } from './request/support.request';
 
 export class UserController {
   constructor(
@@ -67,7 +68,9 @@ export class UserController {
     @inject(RestBindings.Http.REQUEST)
     private request: any,
     @inject(FILE_UPLOAD_SERVICE)
-    private handler: FileUploadHandler
+    private handler: FileUploadHandler,
+    @service(SendgridService)
+    public sendGridService: SendgridService
   ) { }
 
   @authenticate('jwt')
@@ -119,11 +122,25 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string
   ): Promise<UserDetail> {
-    const user: UserWithRelations = await this.userRepository.findById(id,
-      {
-        fields: userDetailFields,
-        include: [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }]
-      });
+
+    if (!id) {
+      throw new HttpErrors.BadRequest();
+    }
+
+    let user: UserWithRelations | null = null;
+    const include = [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }];
+    if (/^[a-f\d]{24}$/i.test(id)) {
+      user = await this.userRepository.findById(id,
+        {
+          fields: userDetailFields,
+          include: include
+        });
+    }
+
+    if (!user) {
+      user = await this.userRepository.findOne({ where: { username: id }, fields: userDetailFields, include: include });
+    }
+
     if (!user) {
       throw new HttpErrors.NotFound();
     }
@@ -235,7 +252,13 @@ export class UserController {
         if (updates['username'] !== user.username) {
           const existingUsername = await this.userRepository.findOne({ where: { username: username } });
           if (existingUsername) {
-            throw new HttpErrors.Conflict('Username already exists. If you own that username on Instagram, claim it by going to Account → Settings → Instagram');
+            throw new HttpErrors.Conflict('Username already exists.');
+          }
+          if (!/^[0-9A-Za-z._]*$/g.test(username)) {
+            throw new HttpErrors.Conflict('Invalid username, must contain only letters, numbers, periods, and undescores.');
+          }
+          if (username.length > 30) {
+            throw new HttpErrors.Conflict('Invalid username, must be 30 characters or less');
           }
         }
         updates['usernameReset'] = false;
@@ -365,7 +388,7 @@ export class UserController {
         errors: [],
         freeSales: 3,
         verificationStatus: 'unverified',
-        address: { name: request.firstName + ' ' + request.lastName, ...request.address },
+        address: { ...request.address, name: request.firstName + ' ' + request.lastName },
         approved: false,
         socialChannels: channels
       }
@@ -530,6 +553,27 @@ export class UserController {
     return await this.userRepository.findById(this.user.id);
   }
 
+  @post('/users/support', {
+    responses: {
+      '204': {
+        description: 'Support success',
+      },
+    },
+  })
+  async support(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SupportRequest),
+        },
+      },
+    })
+    request: SupportRequest
+  ): Promise<void> {
+    await this.sendGridService.sendEmail('support@relovely.com',
+      `Support ticket`,
+      request.body, request.email);
+  }
 
   @authenticate('jwt')
   @post('/users/add-document', {
@@ -640,4 +684,6 @@ export class UserController {
         break;
     }
   }
+
+
 }

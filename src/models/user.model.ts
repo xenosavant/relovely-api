@@ -143,6 +143,12 @@ export class User extends Entity {
   })
   addresses: Address[];
 
+  @property({
+    type: Address,
+    required: false
+  })
+  returnAddress: Address;
+
   @property.array(Card)
   cards: Card[];
 
