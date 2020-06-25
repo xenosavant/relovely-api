@@ -312,7 +312,7 @@ export class OrderController {
       if (!order) {
         throw new HttpErrors.NotFound();
       }
-      if (event.result.status === 'in_transit') {
+      if (event.result.status === 'in_transit' || event.result.status === 'out_for_delivery') {
         if (order.status === 'purchased') {
           await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: moment().toDate() });
         }
