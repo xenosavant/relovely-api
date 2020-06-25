@@ -256,7 +256,7 @@ export class OrderController {
     })
     request: PreviewShipmentRequest
   ): Promise<PreviewShipmentResponse> {
-    const seller = await this.userRepository.findById(request.sellerId, { fields: { seller: true } });
+    const seller = await this.userRepository.findById(request.sellerId);
     request.fromAddress = seller.returnAddress
     const shipment = await this.easyPostService.createShipment(request);
     if (shipment.error) {
