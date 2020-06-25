@@ -9,7 +9,7 @@ import { OrderRepository, UserRepository, ProductRepository } from '../../reposi
 import { inject } from '@loopback/core';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { SecurityBindings } from '@loopback/security';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { userListFields, UserList } from '../user/response/user-list.interface';
 import { UserReviewsResponse } from '../user/response/user-reviews-response';
 
@@ -72,7 +72,7 @@ export class ReviewController {
       review.productId = product.id;
       review.orderId = order.id;
       review.sellerId = product.sellerId;
-      review.date = moment().toDate();
+      review.date = moment.utc().toDate();
       await this.productRepository.review(id).create(review);
       return this.orderRepository.findById(order.id, {
         include: [{ relation: 'buyer', scope: { fields: userListFields } },
