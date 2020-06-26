@@ -7,18 +7,11 @@ import { TaxTranactionRequest } from './tax-transaction.request';
 import { TaxNexusResponse } from './tax-nexus.rsponse';
 
 const Taxjar = require('taxjar');
-let client: any;
-if (process.env.NODE_ENV === 'production') {
-  client = new Taxjar({
-    apiKey: process.env.TAXJAR_API_KEY,
-    apiUrl: 'https://api.taxjar.com/v2/'
-  })
-} else {
-  client = new Taxjar({
-    apiKey: process.env.TAXJAR_API_KEY,
-    apiUrl: Taxjar.SANDBOX_API_URL
-  })
-}
+
+const client = new Taxjar({
+  apiKey: process.env.TAXJAR_API_KEY,
+  apiUrl: process.env.TAXJAR_BASE_URL
+});
 
 const TAX_CODE = '20010';
 @bind({ scope: BindingScope.CONTEXT })
