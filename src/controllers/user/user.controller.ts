@@ -166,8 +166,8 @@ export class UserController {
 
       response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
       response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
-      response.city = (response.seller && response.seller.address) ? response.seller.address.city : null;
-      response.state = (response.seller && response.seller.address) ? response.seller.address.state : null;
+      response.city = (response.returnAddress) ? response.returnAddress.city : null;
+      response.state = (response.returnAddress) ? response.returnAddress.state : null;
       delete response.products;
     }
     promises.push(

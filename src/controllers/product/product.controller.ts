@@ -33,6 +33,7 @@ import { request } from 'http';
 import { productListFields, ProductList } from './response/product-list.interface';
 import { ProductDetailResponse } from './response/product-detail.response';
 const ObjectId = require('mongodb').ObjectId
+import moment from 'moment-timezone';
 
 export class ProductController {
   constructor(
@@ -139,7 +140,8 @@ export class ProductController {
       where: where,
       skip: pageNumber * pageLength,
       limit: pageLength,
-      include: [{ relation: 'seller', scope: { fields: userListFields } }]
+      include: [{ relation: 'seller', scope: { fields: userListFields } }],
+      order: ['createdOn DESC']
     }).then(response => products = response);
 
     const countPromise = this.productRepository.count(where).then(response => count = response.count);
@@ -251,6 +253,7 @@ export class ProductController {
     product.active = true;
     product.sold = false;
     product.auction = false;
+    product.createdOn = moment().utc().toDate();
     return this.userRepository.products(id).create(product);
   }
 

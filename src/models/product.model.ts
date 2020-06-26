@@ -17,6 +17,12 @@ export class Product extends Entity {
   id?: string;
 
   @property({
+    type: 'date',
+    required: false,
+  })
+  createdOn?: Date;
+
+  @property({
     type: 'boolean',
     required: false,
   })

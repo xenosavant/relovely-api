@@ -142,7 +142,7 @@ export class OrderController {
         // TODO: Move this
         const taxTransaction = await this.taxService.createTransaction({
           transaction_id: order.id as string,
-          transaction_date: moment().toDate(),
+          transaction_date: moment().utc().toDate(),
           to_country: request.address.country,
           to_zip: request.address.zip,
           to_state: request.address.state,
@@ -348,7 +348,7 @@ export class OrderController {
 
   async generateOrderNumber(): Promise<string> {
     const randomString = this.randomString(2, this.charString);
-    const randomNumbers = Math.round(Math.random() * 10);
+    const randomNumbers = Math.round(Math.random() * 99);
     const date = moment().format('YYMMDD');
     const orderNumber = date + '-' + randomNumbers + randomString;
     const existing = await this.orderRepository.count({ orderNumber: orderNumber });
