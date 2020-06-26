@@ -96,7 +96,7 @@ export class UserController {
     try {
       user = await this.userRepository.findById(this.user.id as string, { fields: userAuthFields });
       if (user.type === 'seller') {
-        const unshippedSales = await this.orderRepository.find({ where: { labelPrinted: { exists: false }, status: 'purchased' }, fields: { id: true } });
+        const unshippedSales = await this.orderRepository.find({ where: { sellerId: this.user.id, labelPrinted: { exists: false }, status: 'purchased' }, fields: { id: true } });
         if (unshippedSales.length !== 0) {
           user.sales = unshippedSales;
         }
@@ -388,7 +388,6 @@ export class UserController {
         errors: [],
         freeSales: 3,
         verificationStatus: 'unverified',
-        address: { ...request.address, name: request.firstName + ' ' + request.lastName },
         approved: false,
         socialChannels: channels
       }

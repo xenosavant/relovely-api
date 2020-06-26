@@ -24,7 +24,7 @@ import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { authenticate } from '@loopback/authentication';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { userListFields } from '../user/response/user-list.interface';
 import { ListResponse } from '../list-response';
 import { StripeService } from '../../services/stripe/stripe.service';
@@ -314,10 +314,32 @@ export class OrderController {
       }
       if (event.result.status === 'in_transit' || event.result.status === 'out_for_delivery') {
         if (order.status === 'purchased') {
-          await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: moment().toDate() });
+          let shipDate: Date;
+          const detail = event.result.tracking_details.find((d: any) =>
+            d.status === 'in_transit' || d.status === 'out_for_delivery'
+          );
+          if (detail) {
+            // date is acually in EDT not UTC?
+            detail.datetime = detail.datetime.replace(/Z/g, '');
+            shipDate = moment.tz(detail.datetime, "America/New_York").utc().toDate();
+          } else {
+            shipDate = moment().toDate()
+          }
+          await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: shipDate });
         }
       } else if (event.result.status === 'delivered') {
-        await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: moment().toDate() });
+        let shipDate: Date;
+        const detail = event.result.tracking_details.find((d: any) =>
+          d.status === 'delivered'
+        );
+        if (detail) {
+          // date is acually in EDT not UTC?
+          detail.datetime = detail.datetime.replace(/Z/g, '');
+          shipDate = moment.tz(detail.datetime, "America/New_York").utc().toDate();
+        } else {
+          shipDate = moment().toDate()
+        }
+        await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: shipDate });
       } else if (['error', 'failure'].includes(event.result.status)) {
         await this.orderRepository.updateById(order.id, { status: 'error' });
       }
