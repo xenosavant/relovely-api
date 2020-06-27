@@ -140,11 +140,12 @@ export class EasyPostService {
   }
 
   private compareAddresses(address1: Address, address2: EasyPostAddress): boolean {
-    return (address1.city.toUpperCase() === address2.city.toUpperCase()
-      && address1.line1.toUpperCase() === address2.street1.toUpperCase()
-      && address1.line2.toUpperCase() === address2.street2.toUpperCase()
-      && address1.state.toUpperCase() === address2.state.toUpperCase()
-      && address1.zip.toUpperCase() === address2.zip.toUpperCase())
+    let addressOne, addressTwo;
+    addressOne = address1.line1 + address1.line2 + address1.city + address1.state + address1.zip;
+    addressTwo = address2.street1 + address2.street2 + address2.city + address2.state + address2.zip;
+    addressOne = addressOne.replace(/[ ,]/g, '').toUpperCase();
+    addressTwo = addressOne.replace(/[ ,]/g, '').toUpperCase();
+    return addressOne === addressTwo;
   }
 
 
