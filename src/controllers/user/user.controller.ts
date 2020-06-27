@@ -50,6 +50,7 @@ import * as crypto from 'crypto';
 import { productListFields } from '../product/response/product-list.interface';
 import { httpsGetAsync } from '@loopback/testlab';
 import { SupportRequest } from './request/support.request';
+import moment from 'moment';
 
 export class UserController {
   constructor(
@@ -101,6 +102,7 @@ export class UserController {
           user.sales = unshippedSales;
         }
       }
+      this.userRepository.updateById(user.id, { lastActive: moment().utc().toDate() })
       return user;
     } catch {
       throw new HttpErrors.Unauthorized;

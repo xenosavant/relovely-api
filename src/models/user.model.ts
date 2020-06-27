@@ -23,6 +23,12 @@ export class User extends Entity {
   active: boolean;
 
   @property({
+    type: 'date',
+    required: false,
+  })
+  lastActive?: Date;
+
+  @property({
     type: 'boolean',
     required: false,
   })

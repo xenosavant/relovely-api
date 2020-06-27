@@ -37,10 +37,10 @@ export class RelovelyApplication extends BootMixin(
       path: '/explorer',
     });
 
-    // if (process.env.NODE_ENV !== 'production') {
-    this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({ debug: true });
-    require('dotenv').config();
-    // }
+    if (process.env.NODE_ENV !== 'production') {
+      this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({ debug: true });
+      require('dotenv').config();
+    }
 
     registerAuthenticationStrategy(this as any, JWTAuthenticationStrategy);
 

@@ -129,7 +129,8 @@ export class AuthController {
     const user = await this.credentialService.verifyCredentials({ identifier: downcasedEmail, password: request.password });
 
     if (!user) {
-      throw new HttpErrors.Forbidden('Invalid Credentials');
+      await sleep(2000);
+      throw new HttpErrors.Forbidden('Incorrect username or password');
     }
 
     if (!user.emailVerified) {

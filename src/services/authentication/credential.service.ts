@@ -9,6 +9,7 @@ import { PasswordManager } from '../user/password-manager';
 import { inject } from "@loopback/core";
 import { TokenServiceBindings } from "../../keys/token-service.bindings";
 import { AppUserProfile } from "../../authentication/app-user-profile";
+import { sleep } from '../../helpers/sleep';
 
 export class AppCredentialService implements UserService<User, Credentials>, PasswordManager {
   constructor(
@@ -25,15 +26,18 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
     const message = 'Invalid login.'
 
     if (!foundUser) {
-      throw new HttpErrors.Forbidden('no user');
+      await sleep(2000);
+      throw new HttpErrors.Forbidden('Incorrect username or password');
     }
 
     if (!foundUser.passwordHash) {
-      throw new HttpErrors.Forbidden('no hash');
+      await sleep(2000);
+      throw new HttpErrors.Forbidden('Incorrect username or password');
     }
     const valid = await this.verifyPassword(foundUser.passwordHash as string, credentials.password);
     if (!valid) {
-      throw new HttpErrors.Forbidden('invalid password');
+      await sleep(2000);
+      throw new HttpErrors.Forbidden('Incorrect username or password');
     }
 
     return foundUser;

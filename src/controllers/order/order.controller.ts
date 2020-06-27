@@ -72,7 +72,7 @@ export class OrderController {
     const product: ProductWithRelations = await this.productRepository.findById(id);
     const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true } });
     if (!buyer || !buyer.stripeCustomerId) {
-      throw new HttpErrors.BadRequest('No customer');
+      throw new HttpErrors.BadRequest('Something went wrong there...please try your purchase again');
     }
     if (!product.sold) {
       const shipTo = buyer.addresses.find(a => a.primary) as Address;
@@ -102,7 +102,7 @@ export class OrderController {
       });
 
       if (tax.error) {
-        throw new HttpErrors[500]('Something went wrong there...try your purchase again');
+        throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
       }
 
       const total = product.price + tax.tax + shipment.shippingCost;
@@ -260,7 +260,7 @@ export class OrderController {
     request.fromAddress = seller.returnAddress
     const shipment = await this.easyPostService.createShipment(request);
     if (shipment.error) {
-      throw new HttpErrors.BadRequest(shipment.error);
+      throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
     const taxRate = await this.taxService.calculateTax({
       toAddress: request.toAddress,
@@ -271,7 +271,7 @@ export class OrderController {
       categoryId: request.categoryId
     })
     if (taxRate.error) {
-      throw new HttpErrors.BadRequest(taxRate.error);
+      throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
     return { ...shipment, taxRate: taxRate.tax }
   }
