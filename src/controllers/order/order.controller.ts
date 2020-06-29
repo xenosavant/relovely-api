@@ -205,7 +205,7 @@ export class OrderController {
     } else {
       where = { buyerId: currentUser.id };
     }
-    list = await this.orderRepository.find({ where: where, include: include });
+    list = await this.orderRepository.find({ where: where, include: include, order: ['purchaseDate DESC'] });
     return {
       count: list.length,
       items: list
