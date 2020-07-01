@@ -439,7 +439,7 @@ export class UserController {
       await this.sendGridService.sendEmail('support@relovely.com',
         `Seller Verification Error`,
         error.message);
-      throw new HttpErrors[500]('Someting went wrong...please contact support');
+      throw new HttpErrors[500]('Someting went wrong...we are looking into it');
     }
   }
 
