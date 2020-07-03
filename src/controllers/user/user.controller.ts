@@ -415,9 +415,6 @@ export class UserController {
     request: SellerAccountRequest,
   ): Promise<User> {
     try {
-      await this.sendGridService.sendEmail('support@relovely.com',
-        `Seller Verification Error`,
-        JSON.stringify(this.request));
       const account = await this.stripeService.createSeller(request, this.request.ip);
       const verificationStatus = account.individual?.verification?.status;
       let currentStatus: string;
