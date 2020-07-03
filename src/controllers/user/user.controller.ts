@@ -66,7 +66,7 @@ export class UserController {
     public instagramService: InstagramService,
     @service(StripeService)
     public stripeService: StripeService,
-    @inject(RestBindings.Http.CONTEXT)
+    @inject(RestBindings.Http.REQUEST)
     private request: any,
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
