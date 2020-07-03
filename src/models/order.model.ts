@@ -108,31 +108,31 @@ export class Order extends Entity {
   public trackingUrl: string;
 
   @property({
-    type: 'string',
-    required: false,
+    type: 'number',
+    required: true,
   })
-  public total?: number;
+  public total: number;
 
   @property({
-    type: 'string',
-    required: false,
+    type: 'number',
+    required: true,
   })
-  public shippingCost?: number;
+  public shippingCost: number;
 
   @property({
-    type: 'string',
-    required: false,
+    type: 'number',
+    required: true,
   })
-  public tax?: number;
+  public tax: number;
 
   @property({
-    type: 'string',
+    type: 'number',
     required: true,
   })
   public sellerFee: number;
 
   @property({
-    type: 'string',
+    type: 'number',
     required: true,
   })
   public transferFee: number;

@@ -511,16 +511,10 @@ export class UserController {
   ): Promise<User> {
     const user = await this.userRepository.findById(this.user.id);
     const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
-    const seller: SellerDetails = {
-      ...user.seller,
-      verificationStatus: 'review',
-      missingInfo: account.requirements?.currently_due || [],
-      errors: account.requirements?.errors?.map(e => e.reason) || []
-    }
-    if (request.address) {
-      seller.address = request.address;
-    }
-    await this.userRepository.updateById(this.user.id as string, { seller: seller });
+    await this.userRepository.updateById(this.user.id as string, {
+      'seller.verificationStatus': 'review', 'seller.missingInfo': account.requirements?.currently_due || [],
+      'seller.errors': account.requirements?.errors?.map(e => e.reason) || []
+    } as any);
     return await this.userRepository.findById(this.user.id);
   }
 

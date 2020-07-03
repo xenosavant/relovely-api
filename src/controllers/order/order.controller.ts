@@ -17,6 +17,7 @@ import {
   del,
   requestBody,
   HttpErrors,
+  Trie,
 } from '@loopback/rest';
 import { Order, User, Product, ProductRelations, ProductWithRelations, UserWithRelations } from '../../models';
 import { OrderRepository, UserRepository, ProductRepository } from '../../repositories';
@@ -35,6 +36,8 @@ import { PreviewShipmentResponse } from '../shipment/preview-shipment.response';
 import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
 import { TaxService } from '../../services/tax/tax.service';
 import { SellerDetails } from '../../models/seller-details';
+import { SendgridService } from '../../services';
+import { formatMoney } from '../../util/format';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -53,7 +56,9 @@ export class OrderController {
     @service(EasyPostService)
     public easyPostService: EasyPostService,
     @service(TaxService)
-    public taxService: TaxService
+    public taxService: TaxService,
+    @service(SendgridService)
+    public sendGridService: SendgridService,
   ) { }
 
   @authenticate('jwt')
@@ -70,7 +75,7 @@ export class OrderController {
     @requestBody() request: OrderRequest
   ): Promise<Order> {
     const product: ProductWithRelations = await this.productRepository.findById(id);
-    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true } });
+    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true, email: true } });
     if (!buyer || !buyer.stripeCustomerId) {
       throw new HttpErrors.BadRequest('Something went wrong there...please try your purchase again');
     }
@@ -162,6 +167,30 @@ export class OrderController {
             }
           ]
         });
+
+        this.sendGridService.sendTransactional({
+          price: formatMoney(product.price),
+          tax: formatMoney(order.tax),
+          shipping: formatMoney(order.shippingCost),
+          total: formatMoney(order.total),
+          to: request.address,
+          orderNumber: order.orderNumber,
+          trackingLink: order.trackingUrl,
+          title: product.title
+        },
+          'd-d5bc3507b9c042a4880abae643ee2a26', buyer.email);
+        this.sendGridService.sendTransactional({
+          price: formatMoney(product.price),
+          sellerFee: formatMoney(order.sellerFee),
+          transferFee: formatMoney(order.transferFee),
+          total: formatMoney(product.price - order.sellerFee - order.transferFee),
+          to: request.address,
+          orderNumber: order.orderNumber,
+          shippingLabelUrl: order.shippingLabelUrl,
+          title: product.title
+        },
+          'd-927c52400712440ea78d8d487e0c25ed', seller.email);
+
         return order;
       } else {
         throw new HttpErrors.BadRequest('Charge was declined');

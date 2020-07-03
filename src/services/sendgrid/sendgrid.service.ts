@@ -24,4 +24,27 @@ export class SendgridService {
     await this.client.send(msg);
   }
 
+  public async sendTransactional(data: any, templateId: string, to: string) {
+    try {
+      await this.client.send({
+        from: 'relovely@relovely.com',
+        personalizations: [
+          {
+            to: [
+              {
+                email: to
+              }
+            ],
+            dynamic_template_data: data
+          }
+        ],
+        template_id: templateId
+      })
+    }
+
+    catch (error) {
+      const e = error;
+    }
+
+  }
 }
