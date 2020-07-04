@@ -415,7 +415,7 @@ export class UserController {
     request: SellerAccountRequest,
   ): Promise<User> {
     try {
-      const account = await this.stripeService.createSeller(request, this.request.ip);
+      const account = await this.stripeService.createSeller(request, this.request.headers['x-forwarded-for']);
       const verificationStatus = account.individual?.verification?.status;
       let currentStatus: string;
       if (verificationStatus === 'verified') {
@@ -427,13 +427,12 @@ export class UserController {
         firstName: request.firstName,
         lastName: request.lastName,
         stripeSellerId: account.id,
-        seller: {
-          verificationStatus: currentStatus,
-          address: request.address,
-          missingInfo: account.requirements?.currently_due || [],
-          errors: account.requirements?.errors?.map(e => e.reason) || []
-        }
-      });
+        'seller.verificationStatus': currentStatus,
+        'seller.address': request.address,
+        'seller.missingInfo': account.requirements?.currently_due || [],
+        'seller.errors': account.requirements?.errors?.map(e => e.reason) || []
+      } as any
+      );
       return await this.userRepository.findById(this.user.id);
     } catch (error) {
       await this.sendGridService.sendEmail('support@relovely.com',
@@ -511,16 +510,10 @@ export class UserController {
   ): Promise<User> {
     const user = await this.userRepository.findById(this.user.id);
     const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
-    const seller: SellerDetails = {
-      ...user.seller,
-      verificationStatus: 'review',
-      missingInfo: account.requirements?.currently_due || [],
-      errors: account.requirements?.errors?.map(e => e.reason) || []
-    }
-    if (request.address) {
-      seller.address = request.address;
-    }
-    await this.userRepository.updateById(this.user.id as string, { seller: seller });
+    await this.userRepository.updateById(this.user.id as string, {
+      'seller.verificationStatus': 'review', 'seller.missingInfo': account.requirements?.currently_due || [],
+      'seller.errors': account.requirements?.errors?.map(e => e.reason) || []
+    } as any);
     return await this.userRepository.findById(this.user.id);
   }
 
