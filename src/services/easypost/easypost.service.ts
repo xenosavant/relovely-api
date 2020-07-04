@@ -144,7 +144,7 @@ export class EasyPostService {
     addressOne = address1.line1 + address1.line2 + address1.city + address1.state + address1.zip;
     addressTwo = address2.street1 + address2.street2 + address2.city + address2.state + address2.zip;
     addressOne = addressOne.replace(/[ ,]/g, '').toUpperCase();
-    addressTwo = addressOne.replace(/[ ,]/g, '').toUpperCase();
+    addressTwo = addressTwo.replace(/[ ,]/g, '').toUpperCase();
     return addressOne === addressTwo;
   }
 
