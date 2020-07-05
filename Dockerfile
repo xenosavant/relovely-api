@@ -14,6 +14,7 @@ WORKDIR /home/node/app
 # where available (npm@5+)
 COPY --chown=node package*.json ./
 
+RUN npm install puppeteer --unsafe-perm=true
 RUN npm install
 
 # Bundle app source code
