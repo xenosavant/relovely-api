@@ -415,7 +415,7 @@ export class UserController {
     request: SellerAccountRequest,
   ): Promise<User> {
     try {
-      const account = await this.stripeService.createSeller(request, this.request.headers['x-forwarded-for']);
+      const account = await this.stripeService.createSeller(request, this.request.headers['x-forwarded-for'] || '127.0.0.1');
       const verificationStatus = account.individual?.verification?.status;
       let currentStatus: string;
       if (verificationStatus === 'verified') {
@@ -427,6 +427,9 @@ export class UserController {
         firstName: request.firstName,
         lastName: request.lastName,
         stripeSellerId: account.id,
+        'seller.birthDay': request.birthDay,
+        'seller.birthMonth': request.birthMonth,
+        'seller.birthYear': request.birthYear,
         'seller.verificationStatus': currentStatus,
         'seller.address': request.address,
         'seller.missingInfo': account.requirements?.currently_due || [],
