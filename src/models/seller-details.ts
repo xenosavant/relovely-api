@@ -10,7 +10,7 @@ export class SellerDetails {
   @property()
   verificationStatus: string;
   @property()
-  address?: Address
+  address?: Address;
   @property()
   approved?: boolean;
   @property()
@@ -19,4 +19,10 @@ export class SellerDetails {
   freeSales?: number;
   @property.array('string')
   socialChannels?: string[];
+  @property()
+  birthDay?: number;
+  @property()
+  birthMonth?: number;
+  @property()
+  birthYear?: number;
 }
