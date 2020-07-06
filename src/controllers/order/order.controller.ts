@@ -37,7 +37,7 @@ import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
 import { TaxService } from '../../services/tax/tax.service';
 import { SellerDetails } from '../../models/seller-details';
 import { SendgridService } from '../../services';
-import { formatMoney } from '../../util/format';
+import { formatMoney, getShippingCost } from '../../util/format';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -97,10 +97,12 @@ export class OrderController {
         transferFee = Math.round((product.price * .029));
       }
 
+      const shippingCost = getShippingCost(shipment.shippingCost);
+
       const tax = await this.taxService.calculateTax({
         toAddress: shipTo,
         fromAddress: seller.returnAddress as Address,
-        shippingCost: shipment.shippingCost,
+        shippingCost: shippingCost,
         price: product.price,
         sellerId: seller.id as string,
         categoryId: product.categories.find(cat => cat.length === 2) as string
@@ -110,8 +112,8 @@ export class OrderController {
         throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
       }
 
-      const total = product.price + tax.tax + shipment.shippingCost;
-      const fees = sellerFee + transferFee + tax.tax + shipment.shippingCost;
+      const total = product.price + tax.tax + shippingCost;
+      const fees = sellerFee + transferFee + tax.tax + shippingCost;
       const token = await this.stripeService.chargeCustomer(buyer.stripeCustomerId as string, seller.stripeSellerId as string, total, fees, request.paymentId);
       if (token) {
         product.sold = true;
@@ -127,9 +129,9 @@ export class OrderController {
           shipmentId: shipment.shipmentId,
           trackerId: shipment.trackerId,
           shippingCarrier: 'USPS',
-          shippingCost: shipment.shippingCost,
+          shippingCost: shippingCost,
           tax: tax.tax,
-          total: product.price + shipment.shippingCost,
+          total: product.price + shippingCost,
           trackingUrl: shipment.trackingUrl,
           shippingLabelUrl: shipment.postageLabelUrl,
           address: buyer.addresses.find(a => a.primary) as Address,
@@ -291,6 +293,7 @@ export class OrderController {
     if (shipment.error) {
       throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
+    shipment.shippingRate = getShippingCost(shipment.shippingRate);
     const taxRate = await this.taxService.calculateTax({
       toAddress: request.toAddress,
       fromAddress: request.fromAddress as Address,
