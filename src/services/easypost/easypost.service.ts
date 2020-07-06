@@ -74,7 +74,7 @@ export class EasyPostService {
     const parcel = new easypost.Parcel({
       weight: request.weight,
       predefined_package: 'parcel',
-      mode: 'test'
+      mode: process.env.EASYPOST_MODE
     });
 
     const shipment = new easypost.Shipment({
