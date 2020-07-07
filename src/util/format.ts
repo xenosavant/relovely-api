@@ -3,12 +3,14 @@ export function formatMoney(amount: number) {
   return '$' + returnAmount;
 }
 
-export function getShippingCost(cost: number): number {
-  if (cost < 700) {
-    return cost;
-  } else if (cost >= 700 && cost < 800) {
-    return 750
-  } else if (cost >= 800 && cost < 900) {
-    return 850;
-  } else return 899
+export function getShippingCost(weight: number): number {
+  if (weight <= 16) {
+    return 795;
+  } else if (weight <= 32) {
+    return 895
+  } else if (weight <= 48) {
+    return 895;
+  } else if (weight <= 64) {
+    return 995
+  } else return 1095
 }

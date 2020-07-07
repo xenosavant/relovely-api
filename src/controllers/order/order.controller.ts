@@ -97,7 +97,7 @@ export class OrderController {
         transferFee = Math.round((product.price * .029));
       }
 
-      const shippingCost = getShippingCost(shipment.shippingCost);
+      const shippingCost = getShippingCost(product.weight);
 
       const tax = await this.taxService.calculateTax({
         toAddress: shipTo,
@@ -131,7 +131,7 @@ export class OrderController {
           shippingCarrier: 'USPS',
           shippingCost: shippingCost,
           tax: tax.tax,
-          total: product.price + shippingCost,
+          total: product.price + shippingCost + tax.tax,
           trackingUrl: shipment.trackingUrl,
           shippingLabelUrl: shipment.postageLabelUrl,
           address: buyer.addresses.find(a => a.primary) as Address,
@@ -293,7 +293,7 @@ export class OrderController {
     if (shipment.error) {
       throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
-    shipment.shippingRate = getShippingCost(shipment.shippingRate);
+    shipment.shippingRate = getShippingCost(request.weight);
     const taxRate = await this.taxService.calculateTax({
       toAddress: request.toAddress,
       fromAddress: request.fromAddress as Address,
