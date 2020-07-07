@@ -129,6 +129,12 @@ export class Product extends Entity {
   })
   weight: number;
 
+  @property({
+    type: 'number',
+    required: false,
+  })
+  views?: number;
+
   @property.array(String)
   tags?: string[];
 

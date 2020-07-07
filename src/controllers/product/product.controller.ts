@@ -141,7 +141,7 @@ export class ProductController {
       skip: pageNumber * pageLength,
       limit: pageLength,
       include: [{ relation: 'seller', scope: { fields: userListFields } }],
-      order: ['createdOn DESC']
+      order: ['views DESC, createdOn DESC']
     }).then(response => products = response);
 
     const countPromise = this.productRepository.count(where).then(response => count = response.count);
@@ -186,7 +186,6 @@ export class ProductController {
       count: products.length,
       items: products
     }
-
   }
 
   @authenticate('jwt')
@@ -254,7 +253,29 @@ export class ProductController {
     product.sold = false;
     product.auction = false;
     product.createdOn = moment().utc().toDate();
+    product.views = 0;
     return this.userRepository.products(id).create(product);
+  }
+
+  @authenticate('jwt')
+  @post('/products/{id}/view', {
+    responses: {
+      '204': {
+        description: 'Success',
+      },
+    },
+  })
+  async view(
+    @param.path.string('id') id: typeof User.prototype.id
+  ): Promise<void> {
+
+    const product = await this.productRepository.findById(id, { fields: { views: true, sellerId: true } });
+
+    if (product.sellerId === this.user.id || !product) {
+      throw new HttpErrors.BadRequest();
+    }
+
+    await this.productRepository.updateById(id, { views: product.views || 0 + 1 });
   }
 
   @get('/products/{id}', {
