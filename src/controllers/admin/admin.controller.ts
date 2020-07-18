@@ -55,8 +55,6 @@ export class AdminController {
     const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
       verficationCodeString = verificationCode.digest('hex');
 
-    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
-
     await this.userRepository.create({
       active: true,
       firstName: request.firstName,
@@ -64,7 +62,6 @@ export class AdminController {
       email: downcasedEmail,
       type: 'seller',
       emailVerified: false,
-      stripeCustomerId: stripeId,
       instagramUsername: request.instagramUsername,
       username: request.instagramUsername,
       emailVerificationCode: verficationCodeString,
@@ -100,40 +97,46 @@ export class AdminController {
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
-
     const user = await this.userRepository.findOne({ where: { email: request.email } });
     if (!user || !user.seller) {
       throw new HttpErrors.NotFound('Not Found');
     }
 
-    if (/@/.test(user.instagramUsername as string)) {
-      user.instagramUsername = user.instagramUsername?.replace(/@/, '');
-    }
+    if (request.approved) {
+      if (/@/.test(user.instagramUsername as string)) {
+        user.instagramUsername = user.instagramUsername?.replace(/@/, '');
+      }
 
-    const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
+      const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
 
-    existingUsers.forEach(u => {
-      this.userRepository.updateById(u.id, {
-        username: undefined,
-        usernameReset: true
+      existingUsers.forEach(u => {
+        this.userRepository.updateById(u.id, {
+          username: undefined,
+          usernameReset: true
+        });
       });
-    });
 
+      const stripeId = await this.stripeService.createCustomer(user.email);
 
-    const stripeId = await this.stripeService.createCustomer(user.email);
-
-    await this.userRepository.updateById(user.id,
-      {
-        stripeCustomerId: stripeId,
-        active: request.approved,
-        username: user.instagramUsername,
-        instagramUsername: user.instagramUsername,
-        'seller.approved': request.approved,
-        'seller.feautured': request.featured
-      } as any);
-
-    await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${user.emailVerificationCode}">here</a> to get started.`);
+      await this.userRepository.updateById(user.id,
+        {
+          stripeCustomerId: stripeId,
+          active: request.approved,
+          username: user.instagramUsername,
+          instagramUsername: user.instagramUsername,
+          'seller.approved': request.approved,
+          'seller.featured': request.featured
+        } as any);
+      await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
+        `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${user.emailVerificationCode}">here</a> to get started.`);
+    } else {
+      await this.userRepository.updateById(user.id,
+        {
+          active: false,
+          'seller.approved': false,
+          'seller.featured': false
+        } as any);
+    }
   }
 
 
@@ -146,7 +149,7 @@ export class AdminController {
       throw new HttpErrors.Forbidden();
     }
     return await this.userRepository.find({
-      where: { type: 'seller', 'seller.approved': false } as any
+      where: { type: 'seller', 'seller.approved': false, active: true } as any
     });
   }
 
