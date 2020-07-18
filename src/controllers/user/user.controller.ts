@@ -215,7 +215,8 @@ export class UserController {
       return {
         username: u.username as string,
         profileImageUrl: u.profileImageUrl as string,
-        type: u.type
+        type: u.type,
+        id: u.id
       }
     });
   }
