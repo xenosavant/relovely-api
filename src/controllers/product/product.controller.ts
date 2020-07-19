@@ -276,7 +276,7 @@ export class ProductController {
       throw new HttpErrors.BadRequest();
     }
 
-    await this.productRepository.updateById(id, { views: product.views || 0 + 1 });
+    await this.productRepository.updateById(id, { views: (product.views || 0) + 1 });
   }
 
   @get('/products/{id}', {
