@@ -3,7 +3,7 @@ import { TaxCalculationResponse } from './tax-calculation.response';
 import { TaxCalculationRequest } from './tax-calculation.request';
 import { resolve } from 'dns';
 import { HttpErrors } from '@loopback/rest';
-import { TaxTranactionRequest } from './tax-transaction.request';
+import { TaxTransactionRequest } from './tax-transaction.request';
 import { TaxNexusResponse } from './tax-nexus.rsponse';
 
 const Taxjar = require('taxjar');
@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-const TAX_CODE = '20010';
+export const TAX_CODE = '20010';
 @bind({ scope: BindingScope.CONTEXT })
 export class TaxService {
 
@@ -64,7 +64,7 @@ export class TaxService {
     }
   }
 
-  createTransaction(request: TaxTranactionRequest): Promise<TaxCalculationResponse> {
+  createTransaction(request: TaxTransactionRequest): Promise<TaxCalculationResponse> {
     return new Promise((resolve, reject) => {
       client.createOrder(request).then((response: any) => {
         resolve({ tax: response.order.sales_tax });

@@ -34,10 +34,11 @@ import { EasyPostService } from '../../services/easypost/easypost.service';
 import { Address } from '../../models/address.model';
 import { PreviewShipmentResponse } from '../shipment/preview-shipment.response';
 import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
-import { TaxService } from '../../services/tax/tax.service';
+import { TaxService, TAX_CODE } from '../../services/tax/tax.service';
 import { SellerDetails } from '../../models/seller-details';
 import { SendgridService } from '../../services';
 import { formatMoney, getShippingCost } from '../../util/format';
+import { TaxTransactionRequest } from '../../services/tax/tax-transaction.request';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -147,7 +148,7 @@ export class OrderController {
         }
 
         // TODO: Move this
-        const taxTransaction = await this.taxService.createTransaction({
+        const taxRequest: TaxTransactionRequest = {
           transaction_id: order.id as string,
           transaction_date: moment().utc().toDate(),
           to_country: request.address.country,
@@ -156,7 +157,6 @@ export class OrderController {
           to_city: request.address.city,
           to_street: request.address.line1,
           amount: (product.price / 100) + (order.shippingCost as number / 100),
-
           shipping: (order.shippingCost as number / 100),
           sales_tax: (order.tax as number / 100),
           line_items: [
@@ -168,7 +168,11 @@ export class OrderController {
               sales_tax: (order.tax as number / 100)
             }
           ]
-        });
+        }
+        if (['11', '12', '21', '22'].includes(product.categories.find(cat => cat.length === 2) as string)) {
+          taxRequest.line_items[0].product_tax_code = TAX_CODE;
+        }
+        const taxTransaction = await this.taxService.createTransaction(taxRequest);
 
         this.sendGridService.sendTransactional({
           price: formatMoney(product.price),
