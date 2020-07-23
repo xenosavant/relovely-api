@@ -177,7 +177,8 @@ export class ProductController {
       where: {
         and: [
           { id: { inq: me.favorites } },
-          { active: true }
+          { active: true },
+          { sold: false }
         ]
       },
       include: [{ relation: 'seller', scope: { fields: userListFields } }]
@@ -271,11 +272,11 @@ export class ProductController {
 
     const product = await this.productRepository.findById(id, { fields: { views: true, sellerId: true } });
 
-    if (product.sellerId === this.user.id || !product) {
+    if (product.sellerId.toString() === this.user.id || !product) {
       throw new HttpErrors.BadRequest();
     }
 
-    await this.productRepository.updateById(id, { views: product.views || 0 + 1 });
+    await this.productRepository.updateById(id, { views: (product.views || 0) + 1 });
   }
 
   @get('/products/{id}', {

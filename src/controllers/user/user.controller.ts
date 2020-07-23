@@ -166,7 +166,7 @@ export class UserController {
       response.averageRating = rating;
       response.products = response.products ? response.products.filter((p: any) => p.active) : [];
 
-      response.listings = response.products ? response.products.filter((p: Product) => !p.sold) : [];
+      response.listings = response.products ? response.products.filter((p: Product) => !p.sold).sort((a: Product, b: Product) => a.createdOn ? (b.createdOn ? b.createdOn.getTime() : 0) - a.createdOn.getTime() : 1) : [];
       response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
       response.city = (response.returnAddress) ? response.returnAddress.city : null;
       response.state = (response.returnAddress) ? response.returnAddress.state : null;
@@ -215,7 +215,8 @@ export class UserController {
       return {
         username: u.username as string,
         profileImageUrl: u.profileImageUrl as string,
-        type: u.type
+        type: u.type,
+        id: u.id
       }
     });
   }
