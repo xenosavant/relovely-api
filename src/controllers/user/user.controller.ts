@@ -243,7 +243,7 @@ export class UserController {
     if (this.user.id !== id) {
       throw new HttpErrors.Forbidden();
     }
-    const user = await this.userRepository.findById(this.user.id, { fields: { username: true } })
+    const user = await this.userRepository.findById(this.user.id, { fields: { username: true, stripeCustomerId: true } })
     const keys = Object.keys(updates);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -265,6 +265,12 @@ export class UserController {
           }
         }
         updates['usernameReset'] = false;
+      }
+      if (key === 'cards') {
+        const primary = updates['cards']?.find(c => c.primary);
+        if (primary) {
+          await this.stripeService.changeDefaultPayment(user.stripeCustomerId as string, primary.stripeId)
+        }
       }
     }
     await this.userRepository.updateById(id, updates);

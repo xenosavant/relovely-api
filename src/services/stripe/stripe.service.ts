@@ -141,7 +141,11 @@ export class StripeService {
     return result.id;
   }
 
-  async chargeCustomer(customerId: string, sellerId: string, amount: number, fees: number, cardId: string): Promise<string | null> {
+  async changeDefaultPayment(customerId: string, sourceId: string) {
+    return await stripe.customers.update(customerId, { default_source: sourceId });
+  }
+
+  async chargeCustomer(sellerId: string, amount: number, fees: number, paymentId: string, customerId?: string | undefined): Promise<string | null> {
 
     const param: Stripe.ChargeCreateParams = {
       transfer_data: {
@@ -149,10 +153,12 @@ export class StripeService {
         amount: amount - fees
       },
       amount: amount,
-      source: cardId,
-      customer: customerId,
+      source: paymentId,
       currency: 'USD',
       capture: true
+    }
+    if (customerId) {
+      param.customer = customerId;
     }
     const charge = await stripe.charges.create(param);
     if (charge.outcome?.network_status === 'approved_by_network') {

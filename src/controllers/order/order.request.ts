@@ -3,6 +3,8 @@ import { Address } from '../../models/address.model';
 export interface OrderRequest {
   address: Address;
   paymentId: string;
-  rateId: string;
   shipmentId: string;
+  email?: string;
+  last4?: string;
+  cardType?: string;
 }

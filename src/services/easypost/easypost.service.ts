@@ -111,7 +111,7 @@ export class EasyPostService {
     })
   }
 
-  purchaseShipment(shipmentId: string, rateId: string): Promise<PurchaseShipmentResponse> {
+  purchaseShipment(shipmentId: string): Promise<PurchaseShipmentResponse> {
     return new Promise((resolve, reject) => {
       easypost.Shipment.retrieve(shipmentId).then((shipment: any) => {
         const rate = shipment.rates.find((r: any) => r.service === 'Priority' && r.carrier === 'USPS');
