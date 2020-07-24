@@ -6,6 +6,8 @@ export class AddressVerification {
   @property()
   success: boolean;
   @property()
+  verify?: boolean;
+  @property()
   correctedAddress?: Address;
   @property.array(String)
   errors?: string[];
