@@ -29,19 +29,18 @@ export class EasyPostService {
       verifiableAddress.save().then((result: any) => {
         if (result.verifications.delivery.success) {
           result.zip = result.zip.slice(0, 5);
+          const corrected = {
+            line1: result.street1,
+            line2: result.street2,
+            city: result.city,
+            state: result.state,
+            zip: result.zip,
+            country: result.country
+          }
           if (this.compareAddresses(address, result)) {
-            resolve({ success: true });
+            resolve({ success: true, correctedAddress: corrected, verify: false });
           } else {
-            resolve({
-              success: true, correctedAddress: {
-                line1: result.street1,
-                line2: result.street2,
-                city: result.city,
-                state: result.state,
-                zip: result.zip,
-                country: result.country
-              }
-            });
+            resolve({ success: true, correctedAddress: corrected, verify: true });
           }
         } else {
           resolve({
@@ -141,9 +140,9 @@ export class EasyPostService {
 
   private compareAddresses(address1: Address, address2: EasyPostAddress): boolean {
     let addressOne, addressTwo;
-    addressOne = address1.line1 + address1.line2 + address1.city + address1.state + address1.zip;
-    addressTwo = address2.street1 + address2.street2 + address2.city + address2.state + address2.zip;
-    addressOne = addressOne.replace(/[ ,]/g, '').toUpperCase();
+    addressOne = (address1.line1 + address1.line2 + address1.city + address1.state + address1.zip).toUpperCase();
+    addressTwo = (address2.street1 + address2.street2 + address2.city + address2.state + address2.zip).toUpperCase();
+    addressOne = addressOne.replace(/[ ,]/g, '').replace(/STREET/g, 'ST');
     addressTwo = addressTwo.replace(/[ ,]/g, '').toUpperCase();
     return addressOne === addressTwo;
   }
