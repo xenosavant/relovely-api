@@ -16,7 +16,6 @@ export class ShipmentController {
     public easypostService: EasyPostService
   ) { }
 
-  @authenticate('jwt')
   @post('/shipments/verify-address', {
     responses: {
       '200': {

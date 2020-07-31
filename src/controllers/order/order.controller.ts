@@ -85,7 +85,7 @@ export class OrderController {
       const card = buyer.cards.find(c => c.stripeId === request.paymentId) as Card;
       try {
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-          buyer.email, card.last4 as string, card.type, buyer.stripeCustomerId);
+          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId);
         return order;
       } catch (error) {
         throw error;
@@ -111,6 +111,12 @@ export class OrderController {
     const product: ProductWithRelations = await this.productRepository.findById(id);
     if (product.sold) {
       throw new HttpErrors.Conflict('This product is no longer available');
+    }
+    if (request.createAccount) {
+      // TODO: Create a user account
+    }
+    if (request.joinMailingList) {
+      // TODO: Add to mailchimp
     }
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
@@ -187,7 +193,6 @@ export class OrderController {
     return order;
   }
 
-  @authenticate('jwt')
   @post('/shipments/preview', {
     responses: {
       '200': {
@@ -317,8 +322,8 @@ export class OrderController {
   }
 
   async createOrder(shipTo: Address, product: Product, paymentId: string,
-    shipmentId: string, buyerEmail: string,
-    cardLast4: string, cardType: string, customerId?: string): Promise<Order> {
+    shipmentId: string, cardLast4: string, cardType: string,
+    buyerEmail: string, customerId?: string): Promise<Order> {
     const seller = await this.userRepository.findById(product.sellerId);
     const shipment = await this.easyPostService.purchaseShipment(shipmentId);
     let sellerFee = 0,
@@ -420,7 +425,7 @@ export class OrderController {
         trackingLink: order.trackingUrl,
         title: product.title
       },
-        'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
+        'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail as string);
       this.sendGridService.sendTransactional({
         price: formatMoney(product.price),
         sellerFee: formatMoney(order.sellerFee),
