@@ -64,8 +64,8 @@ export class AuthController {
     if (existingEmail) {
       throw new HttpErrors.Conflict('Email already exists');
     }
-
-    const user = await this.userRepository.createUser(downcasedEmail, 'member');
+    const stripeId = await this.stripeService.createCustomer((request.email as string).toLowerCase());
+    const user = await this.userRepository.createUser(downcasedEmail, 'member', stripeId);
 
     const hash = await this.credentialService.hashPassword(request.password);
 
@@ -156,7 +156,7 @@ export class AuthController {
 
     const updates: DataObject<User> = {};
 
-    if (user.type === 'seller' && request.password) {
+    if (request.password) {
       const hash = await this.credentialService.hashPassword(request.password);
       updates.passwordHash = hash;
       updates.passwordVerificationCode = undefined;

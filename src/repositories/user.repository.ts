@@ -27,10 +27,6 @@ export class UserRepository extends DefaultCrudRepository<
   public readonly ratings: HasManyRepositoryFactory<Review, typeof User.prototype.id>;
 
   constructor(
-    @service(SendgridService)
-    public sendGridService: SendgridService,
-    @service(StripeService)
-    public stripeService: StripeService,
     @inject('datasources.db') dataSource: DbDataSource,
     @repository.getter('ProductRepository') protected productRepositoryGetter: Getter<ProductRepository>,
     @repository.getter('OrderRepository') protected orderRepositoryGetter: Getter<OrderRepository>,
@@ -49,15 +45,14 @@ export class UserRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('products', this.products.inclusionResolver);
   }
 
-  public async createUser(email: string, type: 'seller' | 'member', username?: string,
+  public async createUser(email: string, type: 'seller' | 'member', stripeId: string, username?: string,
     firstName?: string, lastName?: string): Promise<UserWithRelations> {
 
     const rand = Math.random().toString(),
       now = new Date(),
       verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
       verficationCodeString = verificationCode.digest('hex'),
-      downcasedEmail = email.toLowerCase(),
-      stripeId = await this.stripeService.createCustomer(downcasedEmail);
+      downcasedEmail = email.toLowerCase();
     let user: UserWithRelations;
 
     if (type === 'member') {
@@ -68,7 +63,6 @@ export class UserRepository extends DefaultCrudRepository<
         lastName: lastName,
         email: downcasedEmail,
         type: 'member',
-        emailVerified: false,
         stripeCustomerId: stripeId,
         emailVerificationCode: verficationCodeString,
         favorites: [],
@@ -105,11 +99,6 @@ export class UserRepository extends DefaultCrudRepository<
         }
       })
     }
-
-    await this.sendGridService.sendEmail(email,
-      'Welcome To Relovely!',
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=${type}&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
-
     return user;
   }
 }
