@@ -108,12 +108,14 @@ export class OrderController {
     @param.path.string('id') id: typeof Product.prototype.id,
     @requestBody() request: OrderRequest
   ): Promise<Order> {
+    let user: UserWithRelations | null = null;
+    const stripeId = await this.stripeService.createCustomer((request.email as string).toLowerCase());
     const product: ProductWithRelations = await this.productRepository.findById(id);
     if (product.sold) {
       throw new HttpErrors.Conflict('This product is no longer available');
     }
     if (request.createAccount) {
-      // TODO: Create a user account
+      user = await this.userRepository.createUser(request.email as string, 'member');
     }
     if (request.joinMailingList) {
       // TODO: Add to mailchimp
@@ -121,6 +123,9 @@ export class OrderController {
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
         request.last4 as string, request.cardType as string, request.email as string);
+      if (request.createAccount) {
+        await this.orderRepository.updateById(order.id, { buyerId: (user as UserWithRelations).id })
+      }
       return order;
     } catch (error) {
       throw error;
@@ -425,7 +430,7 @@ export class OrderController {
         trackingLink: order.trackingUrl,
         title: product.title
       },
-        'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail as string);
+        'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
       this.sendGridService.sendTransactional({
         price: formatMoney(product.price),
         sellerFee: formatMoney(order.sellerFee),

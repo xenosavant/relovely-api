@@ -65,37 +65,11 @@ export class AuthController {
       throw new HttpErrors.Conflict('Email already exists');
     }
 
+    const user = await this.userRepository.createUser(downcasedEmail, 'member');
+
     const hash = await this.credentialService.hashPassword(request.password);
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
 
-    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
-
-    const user = await this.userRepository.create({
-      active: true,
-      email: downcasedEmail,
-      type: 'member',
-      passwordHash: hash,
-      emailVerificationCode: verficationCodeString,
-      emailVerified: false,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      stripeCustomerId: stripeId
-    });
-
-    await this.sendGridService.sendEmail(request.email,
-      'Welcome To Relovely!',
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
+    await this.userRepository.updateById(user.id, { passwordHash: hash });
   }
 
   @post('auth/signin', {
