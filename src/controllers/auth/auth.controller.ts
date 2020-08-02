@@ -70,6 +70,10 @@ export class AuthController {
     const hash = await this.credentialService.hashPassword(request.password);
 
     await this.userRepository.updateById(user.id, { passwordHash: hash });
+
+    await this.sendGridService.sendEmail(user.email,
+      'Welcome To Relovely!',
+      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to verify your email.`);
   }
 
   @post('auth/signin', {

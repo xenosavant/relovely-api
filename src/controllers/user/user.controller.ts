@@ -476,13 +476,21 @@ export class UserController {
     }
     const id = await this.stripeService.addCard(card.stripeId, user.stripeCustomerId);
     card.stripeId = id;
+    const updates: Card[] = [];
     user.cards.forEach(c => {
-      if (c.primary) {
-        delete c.primary;
-      }
+      updates.push({
+        primary: false,
+        name: c.name,
+        stripeId: c.stripeId,
+        last4: c.last4,
+        type: c.type,
+        expirationMonth: c.expirationMonth,
+        expirationYear: c.expirationYear
+      })
     });
-    user.cards.push({ ...card, primary: true });
-    await this.userRepository.updateById(this.user.id, { cards: user.cards });
+    updates.push({ ...card, primary: true });
+    await this.stripeService.changeDefaultPayment(user.stripeCustomerId as string, card.stripeId)
+    await this.userRepository.updateById(this.user.id, { cards: updates });
     return await this.userRepository.findById(this.user.id, { fields: userAuthFields });
   }
 

@@ -115,10 +115,13 @@ export class OrderController {
       throw new HttpErrors.Conflict('This product is no longer available');
     }
     if (request.createAccount) {
-      user = await this.userRepository.createUser(request.email as string, 'member', stripeId);
-      await this.sendGridService.sendEmail(user.email,
-        'Welcome To Relovely!',
-        `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to verify your email.`);
+      user = await this.userRepository.findOne({ where: { email: request.email } });
+      if (!user) {
+        user = await this.userRepository.createUser(request.email as string, 'member', stripeId);
+        await this.sendGridService.sendEmail(user.email,
+          'Welcome To Relovely!',
+          `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to verify your email.`);
+      }
     }
     if (request.joinMailingList) {
       // TODO: Add to mailchimp
