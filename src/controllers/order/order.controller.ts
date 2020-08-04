@@ -120,7 +120,7 @@ export class OrderController {
         user = await this.userRepository.createUser(request.email as string, 'member', stripeId);
         await this.sendGridService.sendEmail(user.email,
           'Welcome To Relovely!',
-          `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to verify your email.`);
+          `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to finish setting up your account.`);
       }
     }
     if (request.joinMailingList) {
