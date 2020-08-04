@@ -13,7 +13,6 @@ import moment from 'moment-timezone';
 import { userListFields, UserList } from '../user/response/user-list.interface';
 import { UserReviewsResponse } from '../user/response/user-reviews-response';
 
-@authenticate('jwt')
 export class ReviewController {
 
   constructor(
@@ -29,6 +28,7 @@ export class ReviewController {
     private user: AppUserProfile,
   ) { }
 
+  @authenticate('jwt')
   @post('/products/{id}/review', {
     responses: {
       '200': {

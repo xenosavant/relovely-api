@@ -13,9 +13,19 @@ export class PriceRange {
 @model()
 export class UserPreferences {
   @property.array(String)
-  sizes?: string[];
+  sizes: string[];
   @property.array(String)
-  colors?: string[];
+  colors: string[];
   @property.array(PriceRange)
-  prices?: PriceRange[];
+  prices: PriceRange[];
 }
+
+@model()
+export class UI {
+  @property(Boolean)
+  joinedMailingList: boolean;
+}
+
+
+
+

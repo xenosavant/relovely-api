@@ -1,7 +1,7 @@
 import { Entity, model, property, hasMany } from '@loopback/repository';
 import { Product, ProductWithRelations } from './product.model';
 import { Order } from './order.model';
-import { UserPreferences } from './user-preferences.model';
+import { UserPreferences, UI } from './user-preferences.model';
 import { Address } from './address.model';
 import { Card } from './card.model';
 import { SellerDetails } from './seller-details';
@@ -160,6 +160,9 @@ export class User extends Entity {
 
   @property(UserPreferences)
   preferences: UserPreferences;
+
+  @property(UI)
+  ui: UI;
 
   @property(SellerDetails)
   seller?: SellerDetails;

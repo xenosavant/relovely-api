@@ -1,11 +1,14 @@
 import { DefaultCrudRepository, repository, HasManyRepositoryFactory } from '@loopback/repository';
-import { User, UserRelations, Product, Order } from '../models';
+import { User, UserRelations, Product, Order, UserWithRelations } from '../models';
 import { DbDataSource } from '../datasources';
-import { inject, Getter } from '@loopback/core';
+import { inject, Getter, service } from '@loopback/core';
 import { ProductRepository } from './product.repository';
 import { OrderRepository } from './order.repository';
 import { Review } from '../models/review.model';
 import { ReviewRepository } from './review.repository';
+import * as crypto from 'crypto';
+import { SendgridService } from '../services';
+import { StripeService } from '../services/stripe/stripe.service';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -40,5 +43,62 @@ export class UserRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('reviews', this.reviews.inclusionResolver);
     this.ratings = this.createHasManyRepositoryFactoryFor('products', reviewRepositoryGetter);
     this.registerInclusionResolver('products', this.products.inclusionResolver);
+  }
+
+  public async createUser(email: string, type: 'seller' | 'member', stripeId: string, username?: string,
+    firstName?: string, lastName?: string): Promise<UserWithRelations> {
+
+    const rand = Math.random().toString(),
+      now = new Date(),
+      verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+      verficationCodeString = verificationCode.digest('hex'),
+      downcasedEmail = email.toLowerCase();
+    let user: UserWithRelations;
+
+    if (type === 'member') {
+      user = await this.create({
+        active: true,
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        email: downcasedEmail,
+        type: 'member',
+        stripeCustomerId: stripeId,
+        emailVerificationCode: verficationCodeString,
+        favorites: [],
+        followers: [],
+        following: [],
+        addresses: [],
+        cards: [],
+        preferences: {
+          sizes: [],
+          colors: [],
+          prices: []
+        }
+      });
+    } else {
+      /// TODO: Create Seller
+      user = await this.create({
+        active: true,
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        email: email.toLowerCase(),
+        type: 'seller',
+        emailVerified: false,
+        emailVerificationCode: verficationCodeString,
+        favorites: [],
+        followers: [],
+        following: [],
+        addresses: [],
+        cards: [],
+        preferences: {
+          sizes: [],
+          colors: [],
+          prices: []
+        }
+      })
+    }
+    return user;
   }
 }

@@ -64,38 +64,16 @@ export class AuthController {
     if (existingEmail) {
       throw new HttpErrors.Conflict('Email already exists');
     }
+    const stripeId = await this.stripeService.createCustomer((request.email as string).toLowerCase());
+    const user = await this.userRepository.createUser(downcasedEmail, 'member', stripeId);
 
     const hash = await this.credentialService.hashPassword(request.password);
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
 
-    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+    await this.userRepository.updateById(user.id, { passwordHash: hash });
 
-    const user = await this.userRepository.create({
-      active: true,
-      email: downcasedEmail,
-      type: 'member',
-      passwordHash: hash,
-      emailVerificationCode: verficationCodeString,
-      emailVerified: false,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      stripeCustomerId: stripeId
-    });
-
-    await this.sendGridService.sendEmail(request.email,
+    await this.sendGridService.sendEmail(user.email,
       'Welcome To Relovely!',
-      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${encodeURI(verficationCodeString)}">here</a> to verify your email.`);
+      `Click <a href="${process.env.WEB_URL}/account/verify?type=member&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to verify your email.`);
   }
 
   @post('auth/signin', {
@@ -182,7 +160,7 @@ export class AuthController {
 
     const updates: DataObject<User> = {};
 
-    if (user.type === 'seller' && request.password) {
+    if (request.password) {
       const hash = await this.credentialService.hashPassword(request.password);
       updates.passwordHash = hash;
       updates.passwordVerificationCode = undefined;

@@ -3,6 +3,8 @@ import { model, property } from '@loopback/repository';
 @model({ settings: { strict: true } })
 export class Card {
   @property()
+  primary?: boolean;
+  @property()
   name: string;
   @property()
   stripeId: string;
@@ -14,6 +16,4 @@ export class Card {
   expirationMonth: number;
   @property()
   expirationYear: number;
-  @property()
-  primary?: boolean;
 }

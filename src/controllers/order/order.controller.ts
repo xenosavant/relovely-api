@@ -34,10 +34,12 @@ import { EasyPostService } from '../../services/easypost/easypost.service';
 import { Address } from '../../models/address.model';
 import { PreviewShipmentResponse } from '../shipment/preview-shipment.response';
 import { PreviewShipmentRequest } from '../shipment/preview-shipment.request';
-import { TaxService } from '../../services/tax/tax.service';
+import { TaxService, TAX_CODE } from '../../services/tax/tax.service';
 import { SellerDetails } from '../../models/seller-details';
 import { SendgridService } from '../../services';
 import { formatMoney, getShippingCost } from '../../util/format';
+import { TaxTransactionRequest } from '../../services/tax/tax-transaction.request';
+import { Card } from '../../models/card.model';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -70,7 +72,7 @@ export class OrderController {
       },
     },
   })
-  async create(
+  async checkout(
     @param.path.string('id') id: typeof Product.prototype.id,
     @requestBody() request: OrderRequest
   ): Promise<Order> {
@@ -80,125 +82,59 @@ export class OrderController {
       throw new HttpErrors.BadRequest('Something went wrong there...please try your purchase again');
     }
     if (!product.sold) {
-      const shipTo = buyer.addresses.find(a => a.primary) as Address;
-      const seller = await this.userRepository.findById(product.sellerId);
-      const shipment = await this.easyPostService.purchaseShipment(request.shipmentId, request.rateId);
-      let sellerFee = 0,
-        transferFee = 0,
-        freeSalesChanged = false;
-      if (seller.seller?.freeSales && seller.seller.freeSales > 0) {
-        freeSalesChanged = true;
-      } else {
-        if (product.price < 500) {
-          sellerFee = 50;
-        } else {
-          sellerFee = Math.round(product.price * .1);
-        }
-        transferFee = Math.round((product.price * .029));
-      }
-
-      const shippingCost = getShippingCost(product.weight);
-
-      const tax = await this.taxService.calculateTax({
-        toAddress: shipTo,
-        fromAddress: seller.returnAddress as Address,
-        shippingCost: shippingCost,
-        price: product.price,
-        sellerId: seller.id as string,
-        categoryId: product.categories.find(cat => cat.length === 2) as string
-      });
-
-      if (tax.error) {
-        throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
-      }
-
-      const total = product.price + tax.tax + shippingCost;
-      const fees = sellerFee + transferFee + tax.tax + shippingCost;
-      const token = await this.stripeService.chargeCustomer(buyer.stripeCustomerId as string, seller.stripeSellerId as string, total, fees, request.paymentId);
-      if (token) {
-        product.sold = true;
-        await this.productRepository.update(product);
-        const card = buyer.cards.find(c => c.stripeId === request.paymentId);
-
-        const order = await this.productRepository.order(id).create({
-          sellerId: product.sellerId,
-          buyerId: this.user.id as string,
-          purchaseDate: moment.utc().toDate(),
-          status: 'purchased',
-          stripeChargeId: token,
-          shipmentId: shipment.shipmentId,
-          trackerId: shipment.trackerId,
-          shippingCarrier: 'USPS',
-          shippingCost: shippingCost,
-          tax: tax.tax,
-          total: product.price + shippingCost + tax.tax,
-          trackingUrl: shipment.trackingUrl,
-          shippingLabelUrl: shipment.postageLabelUrl,
-          address: buyer.addresses.find(a => a.primary) as Address,
-          paymentLast4: card?.last4,
-          paymentType: card?.type,
-          orderNumber: await this.generateOrderNumber(),
-          sellerFee: sellerFee,
-          transferFee: transferFee
-        });
-
-        if (freeSalesChanged) {
-          await this.userRepository.updateById(product.sellerId, { 'seller.freeSales': (seller.seller?.freeSales as number) - 1 } as any)
-        }
-
-        // TODO: Move this
-        const taxTransaction = await this.taxService.createTransaction({
-          transaction_id: order.id as string,
-          transaction_date: moment().utc().toDate(),
-          to_country: request.address.country,
-          to_zip: request.address.zip,
-          to_state: request.address.state,
-          to_city: request.address.city,
-          to_street: request.address.line1,
-          amount: (product.price / 100) + (order.shippingCost as number / 100),
-
-          shipping: (order.shippingCost as number / 100),
-          sales_tax: (order.tax as number / 100),
-          line_items: [
-            {
-              quantity: 1,
-              product_identifier: product.id as string,
-              description: product.title,
-              unit_price: (product.price / 100),
-              sales_tax: (order.tax as number / 100)
-            }
-          ]
-        });
-
-        this.sendGridService.sendTransactional({
-          price: formatMoney(product.price),
-          tax: formatMoney(order.tax),
-          shipping: formatMoney(order.shippingCost),
-          total: formatMoney(order.total),
-          to: request.address,
-          orderNumber: order.orderNumber,
-          trackingLink: order.trackingUrl,
-          title: product.title
-        },
-          'd-d5bc3507b9c042a4880abae643ee2a26', buyer.email);
-        this.sendGridService.sendTransactional({
-          price: formatMoney(product.price),
-          sellerFee: formatMoney(order.sellerFee),
-          transferFee: formatMoney(order.transferFee),
-          total: formatMoney(product.price - order.sellerFee - order.transferFee),
-          to: request.address,
-          orderNumber: order.orderNumber,
-          shippingLabelUrl: order.shippingLabelUrl,
-          title: product.title
-        },
-          'd-927c52400712440ea78d8d487e0c25ed', seller.email);
-
+      const card = buyer.cards.find(c => c.stripeId === request.paymentId) as Card;
+      try {
+        const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
+          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId);
         return order;
-      } else {
-        throw new HttpErrors.BadRequest('Charge was declined');
+      } catch (error) {
+        throw error;
       }
     } else {
       throw new HttpErrors.Conflict('This product is no longer available');
+    }
+  }
+
+
+  @post('/products/{id}/orders/guest', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: { 'application/json': { schema: getModelSchemaRef(Order) } },
+      },
+    },
+  })
+  async checkoutGuest(
+    @param.path.string('id') id: typeof Product.prototype.id,
+    @requestBody() request: OrderRequest
+  ): Promise<Order> {
+    let user: UserWithRelations | null = null;
+    const stripeId = await this.stripeService.createCustomer((request.email as string).toLowerCase());
+    const product: ProductWithRelations = await this.productRepository.findById(id);
+    if (product.sold) {
+      throw new HttpErrors.Conflict('This product is no longer available');
+    }
+    if (request.createAccount) {
+      user = await this.userRepository.findOne({ where: { email: request.email } });
+      if (!user) {
+        user = await this.userRepository.createUser(request.email as string, 'member', stripeId);
+        await this.sendGridService.sendEmail(user.email,
+          'Welcome To Relovely!',
+          `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to finish setting up your account.`);
+      }
+    }
+    if (request.joinMailingList) {
+      // TODO: Add to mailchimp
+    }
+    try {
+      const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
+        request.last4 as string, request.cardType as string, request.email as string);
+      if (request.createAccount) {
+        await this.orderRepository.updateById(order.id, { buyerId: (user as UserWithRelations).id })
+      }
+      return order;
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -268,7 +204,6 @@ export class OrderController {
     return order;
   }
 
-  @authenticate('jwt')
   @post('/shipments/preview', {
     responses: {
       '200': {
@@ -395,6 +330,129 @@ export class OrderController {
     var result = '';
     for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
     return result;
+  }
+
+  async createOrder(shipTo: Address, product: Product, paymentId: string,
+    shipmentId: string, cardLast4: string, cardType: string,
+    buyerEmail: string, customerId?: string): Promise<Order> {
+    const seller = await this.userRepository.findById(product.sellerId);
+    const shipment = await this.easyPostService.purchaseShipment(shipmentId);
+    let sellerFee = 0,
+      transferFee = 0,
+      freeSalesChanged = false;
+    if (seller.seller?.freeSales && seller.seller.freeSales > 0) {
+      freeSalesChanged = true;
+    } else {
+      if (product.price < 500) {
+        sellerFee = 50;
+      } else {
+        sellerFee = Math.round(product.price * .1);
+      }
+      transferFee = Math.round((product.price * .029));
+    }
+
+    const shippingCost = getShippingCost(product.weight);
+
+    const tax = await this.taxService.calculateTax({
+      toAddress: shipTo,
+      fromAddress: seller.returnAddress as Address,
+      shippingCost: shippingCost,
+      price: product.price,
+      sellerId: seller.id as string,
+      categoryId: product.categories.find(cat => cat.length === 2) as string
+    });
+
+    if (tax.error) {
+      throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
+    }
+
+    const total = product.price + tax.tax + shippingCost;
+    const fees = sellerFee + transferFee + tax.tax + shippingCost;
+    const token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, fees, paymentId, customerId as string);
+    if (token) {
+      product.sold = true;
+      await this.productRepository.update(product);
+
+      const order = await this.productRepository.order(product.id).create({
+        sellerId: product.sellerId,
+        buyerId: this.user ? this.user.id as string : undefined,
+        purchaseDate: moment.utc().toDate(),
+        status: 'purchased',
+        stripeChargeId: token,
+        shipmentId: shipment.shipmentId,
+        trackerId: shipment.trackerId,
+        shippingCarrier: 'USPS',
+        shippingCost: shippingCost,
+        tax: tax.tax,
+        total: product.price + shippingCost + tax.tax,
+        trackingUrl: shipment.trackingUrl,
+        shippingLabelUrl: shipment.postageLabelUrl,
+        address: shipTo,
+        paymentLast4: cardLast4,
+        paymentType: cardType,
+        orderNumber: await this.generateOrderNumber(),
+        sellerFee: sellerFee,
+        transferFee: transferFee
+      });
+
+      if (freeSalesChanged) {
+        await this.userRepository.updateById(product.sellerId, { 'seller.freeSales': (seller.seller?.freeSales as number) - 1 } as any)
+      }
+
+      // TODO: Move this
+      const taxRequest: TaxTransactionRequest = {
+        transaction_id: order.id as string,
+        transaction_date: moment().utc().toDate(),
+        to_country: shipTo.country,
+        to_zip: shipTo.zip,
+        to_state: shipTo.state,
+        to_city: shipTo.city,
+        to_street: shipTo.line1,
+        amount: (product.price / 100) + (order.shippingCost as number / 100),
+        shipping: (order.shippingCost as number / 100),
+        sales_tax: (order.tax as number / 100),
+        line_items: [
+          {
+            quantity: 1,
+            product_identifier: product.id as string,
+            description: product.title,
+            unit_price: (product.price / 100),
+            sales_tax: (order.tax as number / 100)
+          }
+        ]
+      }
+      if (['11', '12', '21', '22'].includes(product.categories.find(cat => cat.length === 2) as string)) {
+        taxRequest.line_items[0].product_tax_code = TAX_CODE;
+      }
+      const taxTransaction = await this.taxService.createTransaction(taxRequest);
+
+      this.sendGridService.sendTransactional({
+        price: formatMoney(product.price),
+        tax: formatMoney(order.tax),
+        shipping: formatMoney(order.shippingCost),
+        total: formatMoney(order.total),
+        to: shipTo,
+        orderNumber: order.orderNumber,
+        trackingLink: order.trackingUrl,
+        title: product.title
+      },
+        'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
+      this.sendGridService.sendTransactional({
+        price: formatMoney(product.price),
+        sellerFee: formatMoney(order.sellerFee),
+        transferFee: formatMoney(order.transferFee),
+        total: formatMoney(product.price - order.sellerFee - order.transferFee),
+        to: shipTo,
+        orderNumber: order.orderNumber,
+        shippingLabelUrl: order.shippingLabelUrl,
+        title: product.title
+      },
+        'd-927c52400712440ea78d8d487e0c25ed', seller.email);
+
+      return order;
+    } else {
+      throw new HttpErrors.BadRequest('Charge was declined');
+    }
   }
 }
 

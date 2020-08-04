@@ -110,7 +110,7 @@ export class EasyPostService {
     })
   }
 
-  purchaseShipment(shipmentId: string, rateId: string): Promise<PurchaseShipmentResponse> {
+  purchaseShipment(shipmentId: string): Promise<PurchaseShipmentResponse> {
     return new Promise((resolve, reject) => {
       easypost.Shipment.retrieve(shipmentId).then((shipment: any) => {
         const rate = shipment.rates.find((r: any) => r.service === 'Priority' && r.carrier === 'USPS');
@@ -143,6 +143,8 @@ export class EasyPostService {
     addressOne = (address1.line1 + address1.line2 + address1.city + address1.state + address1.zip).toUpperCase();
     addressTwo = (address2.street1 + address2.street2 + address2.city + address2.state + address2.zip).toUpperCase();
     addressOne = addressOne.replace(/[ ,]/g, '').replace(/STREET/g, 'ST');
+    addressOne = addressOne.replace(/[ ,]/g, '').replace(/DRIVE/g, 'DR');
+    addressOne = addressOne.replace(/[ ,]/g, '').replace(/ROAD/g, 'RD');
     addressTwo = addressTwo.replace(/[ ,]/g, '').toUpperCase();
     return addressOne === addressTwo;
   }
