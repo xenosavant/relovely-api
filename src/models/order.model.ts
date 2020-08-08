@@ -108,6 +108,12 @@ export class Order extends Entity {
   public trackingUrl: string;
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  public email?: string;
+
+  @property({
     type: 'number',
     required: true,
   })
