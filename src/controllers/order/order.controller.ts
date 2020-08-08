@@ -376,6 +376,7 @@ export class OrderController {
       const order = await this.productRepository.order(product.id).create({
         sellerId: product.sellerId,
         buyerId: this.user ? this.user.id as string : undefined,
+        email: buyerEmail,
         purchaseDate: moment.utc().toDate(),
         status: 'purchased',
         stripeChargeId: token,
