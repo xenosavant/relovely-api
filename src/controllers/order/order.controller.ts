@@ -40,6 +40,8 @@ import { SendgridService } from '../../services';
 import { formatMoney, getShippingCost } from '../../util/format';
 import { TaxTransactionRequest } from '../../services/tax/tax-transaction.request';
 import { Card } from '../../models/card.model';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { UI } from '../../models/user-preferences.model';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -61,6 +63,8 @@ export class OrderController {
     public taxService: TaxService,
     @service(SendgridService)
     public sendGridService: SendgridService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
   @authenticate('jwt')
@@ -77,13 +81,16 @@ export class OrderController {
     @requestBody() request: OrderRequest
   ): Promise<Order> {
     const product: ProductWithRelations = await this.productRepository.findById(id);
-    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true, email: true } });
+    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true, email: true, ui: true } });
     if (!buyer || !buyer.stripeCustomerId) {
-      throw new HttpErrors.BadRequest('Something went wrong there...please try your purchase again');
+      throw new HttpErrors.BadRequest('Something went wrong there...please contact support');
     }
     if (!product.sold) {
       const card = buyer.cards.find(c => c.stripeId === request.paymentId) as Card;
       try {
+        if (request.joinMailingList) {
+          await this.addToMailingList(buyer.email as string, buyer);
+        }
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
           card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId);
         return order;
@@ -121,10 +128,12 @@ export class OrderController {
         await this.sendGridService.sendEmail(user.email,
           'Welcome To Relovely!',
           `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to finish setting up your account.`);
+      } else {
+        throw new HttpErrors.Conflict('That email already exists');
       }
     }
     if (request.joinMailingList) {
-      // TODO: Add to mailchimp
+      await this.addToMailingList(request.email as string, user);
     }
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
@@ -455,6 +464,15 @@ export class OrderController {
       throw new HttpErrors.BadRequest('Charge was declined');
     }
   }
+
+  async addToMailingList(email: string, user?: UserWithRelations | null) {
+    await this.mailChimpService.addMember(email);
+    if (user) {
+      await this.userRepository.addRemoveMailingList(user, true);
+    }
+  }
+
+
 }
 
 

@@ -51,6 +51,8 @@ import { productListFields } from '../product/response/product-list.interface';
 import { httpsGetAsync } from '@loopback/testlab';
 import { SupportRequest } from './request/support.request';
 import moment from 'moment';
+import { MailingListSubscriptionRequest } from './request/mailing-list-subscription.request.interface';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 
 export class UserController {
   constructor(
@@ -71,7 +73,9 @@ export class UserController {
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
     @service(SendgridService)
-    public sendGridService: SendgridService
+    public sendGridService: SendgridService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
   @authenticate('jwt')
@@ -368,38 +372,18 @@ export class UserController {
       channels.push(request.channel3)
     }
 
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
+    const downcasedEmail = request.email.toLowerCase();
 
-    await this.userRepository.create({
-      active: true,
-      firstName: request.firstName,
-      lastName: request.lastName,
-      email: request.email.toLowerCase(),
-      type: 'seller',
-      emailVerified: false,
-      emailVerificationCode: verficationCodeString,
-      instagramUsername: request.instagramUsername,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      seller: {
-        missingInfo: ['external_account'],
-        errors: [],
-        freeSales: 3,
-        verificationStatus: 'unverified',
-        approved: false,
-        socialChannels: channels
-      }
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+
+    await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
+      missingInfo: ['external_account'],
+      errors: [],
+      freeSales: 3,
+      verificationStatus: 'unverified',
+      approved: false,
+      socialChannels: channels,
+      address: request.address
     });
   }
 
@@ -631,6 +615,26 @@ export class UserController {
         }
       });
     });
+  }
+
+  @post('/users/subscribe', {
+    responses: {
+      '204': {
+        description: 'Subscription success',
+      },
+    },
+  })
+  async subscribe(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SellerApplicationRequest),
+        },
+      },
+    })
+    request: SellerApplicationRequest,
+  ): Promise<void> {
+    await this.mailChimpService.addMember(request.email);
   }
 
   @post('/users/stripe-webhook', {

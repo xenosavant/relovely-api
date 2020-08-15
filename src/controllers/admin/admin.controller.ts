@@ -14,6 +14,7 @@ import * as crypto from 'crypto'
 import { ApproveSellerRequest } from '../user/request/approve-seller.request';
 import { User } from '../../models';
 import { userListFields } from '../user/response/user-list.interface';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 
 export class AdminController {
   constructor(
@@ -30,7 +31,9 @@ export class AdminController {
     @service(InstagramService)
     public instagramService: InstagramService,
     @service(StripeService)
-    public stripeService: StripeService
+    public stripeService: StripeService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
 
@@ -50,39 +53,15 @@ export class AdminController {
       throw new HttpErrors.Conflict('Email already exists');
     }
 
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
 
-    await this.userRepository.create({
-      active: true,
-      firstName: request.firstName,
-      lastName: request.lastName,
-      email: downcasedEmail,
-      type: 'seller',
-      emailVerified: false,
-      instagramUsername: request.instagramUsername,
-      username: request.instagramUsername,
-      emailVerificationCode: verficationCodeString,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      seller: {
-        missingInfo: ['external_account'],
-        errors: [],
-        approved: false,
-        freeSales: 3,
-        verificationStatus: 'unverified',
-        address: { ...request.address, name: request.firstName + request.lastName }
-      }
+    await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
+      missingInfo: ['external_account'],
+      errors: [],
+      approved: false,
+      freeSales: 3,
+      verificationStatus: 'unverified',
+      address: { ...request.address, name: request.firstName + request.lastName } as any
     });
   }
 
@@ -103,6 +82,8 @@ export class AdminController {
     }
 
     if (request.approved) {
+      await this.mailChimpService.addSeller(user.email);
+      await this.userRepository.addRemoveMailingList(user, true);
       if (/@/.test(user.instagramUsername as string)) {
         user.instagramUsername = user.instagramUsername?.replace(/@/, '');
       }
@@ -116,11 +97,8 @@ export class AdminController {
         });
       });
 
-      const stripeId = await this.stripeService.createCustomer(user.email);
-
       await this.userRepository.updateById(user.id,
         {
-          stripeCustomerId: stripeId,
           active: request.approved,
           username: user.instagramUsername,
           instagramUsername: user.instagramUsername,

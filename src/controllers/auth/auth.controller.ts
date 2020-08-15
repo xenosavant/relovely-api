@@ -17,6 +17,7 @@ import { PasswordEmailRequest } from "./password-email-request";
 import { StripeService } from '../../services/stripe/stripe.service';
 import { User } from '../../models';
 import { sleep } from '../../helpers/sleep';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -36,7 +37,9 @@ export class AuthController {
     @service(InstagramService)
     public instagramService: InstagramService,
     @service(StripeService)
-    public stripeService: StripeService
+    public stripeService: StripeService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
   @post('auth/signup', {
@@ -66,6 +69,8 @@ export class AuthController {
     }
     const stripeId = await this.stripeService.createCustomer((request.email as string).toLowerCase());
     const user = await this.userRepository.createUser(downcasedEmail, 'member', stripeId);
+    await this.mailChimpService.addMember(downcasedEmail);
+    await this.userRepository.addRemoveMailingList(user, true);
 
     const hash = await this.credentialService.hashPassword(request.password);
 

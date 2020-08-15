@@ -162,7 +162,7 @@ export class User extends Entity {
   preferences: UserPreferences;
 
   @property(UI)
-  ui: UI;
+  ui?: UI;
 
   @property(SellerDetails)
   seller?: SellerDetails;
