@@ -129,10 +129,24 @@ export class AdminController {
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
-    const where: any = { type: 'seller', active: true };
+    const where: any = { type: 'seller' };
     if (unapproved === 'true') {
       where['seller.approved'] = { exists: false };
     }
+    return await this.userRepository.find({
+      where: where
+    });
+  }
+
+  @authenticate('jwt')
+  @get('/admin/members')
+  async members(
+  ): Promise<User[]> {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
+      throw new HttpErrors.Forbidden();
+    }
+    const where: any = { type: 'member' };
     return await this.userRepository.find({
       where: where
     });
