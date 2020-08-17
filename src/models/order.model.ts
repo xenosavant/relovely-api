@@ -144,6 +144,18 @@ export class Order extends Entity {
   public transferFee: number;
 
   @property({
+    type: 'number',
+    required: true,
+  })
+  public discount: number;
+
+  @property({
+    type: 'number',
+    required: true,
+  })
+  public shippingDiscount: number;
+
+  @property({
     type: 'string',
     required: true
   })
@@ -160,6 +172,12 @@ export class Order extends Entity {
     required: false
   })
   public labelPrinted: boolean;
+
+  @property({
+    type: 'string',
+    required: false
+  })
+  public promoCode?: string;
 
   @hasOne(() => Review, { keyTo: 'orderId' })
   review: Review;

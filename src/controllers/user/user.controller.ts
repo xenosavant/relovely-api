@@ -663,7 +663,7 @@ export class UserController {
     if (!user) {
       throw new HttpErrors.Forbidden;
     }
-    const promo = await this.promoRepository.findOne({ where: { code: code } });
+    const promo = await this.promoRepository.findOne({ where: { code: code.toUpperCase() } });
     if (!promo) {
       return {
         rejectionReason: 'Invalid Promo Code'

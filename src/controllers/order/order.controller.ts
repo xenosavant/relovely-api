@@ -20,7 +20,7 @@ import {
   Trie,
 } from '@loopback/rest';
 import { Order, User, Product, ProductRelations, ProductWithRelations, UserWithRelations } from '../../models';
-import { OrderRepository, UserRepository, ProductRepository } from '../../repositories';
+import { OrderRepository, UserRepository, ProductRepository, PromoRepository } from '../../repositories';
 import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
@@ -42,6 +42,8 @@ import { TaxTransactionRequest } from '../../services/tax/tax-transaction.reques
 import { Card } from '../../models/card.model';
 import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 import { UI } from '../../models/user-preferences.model';
+import { request } from 'http';
+import { Promo, PromoWithRelations } from '../../models/promo.model';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -49,6 +51,8 @@ export class OrderController {
   constructor(
     @repository(OrderRepository)
     public orderRepository: OrderRepository,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
     @repository(UserRepository)
     public userRepository: UserRepository,
     @repository(ProductRepository)
@@ -92,7 +96,7 @@ export class OrderController {
           await this.addToMailingList(buyer.email as string, buyer);
         }
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId);
+          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode);
         return order;
       } catch (error) {
         throw error;
@@ -137,10 +141,8 @@ export class OrderController {
     }
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-        request.last4 as string, request.cardType as string, request.email as string);
-      if (request.createAccount) {
-        await this.orderRepository.updateById(order.id, { buyerId: (user as UserWithRelations).id })
-      }
+        request.last4 as string, request.cardType as string, request.email as string, undefined,
+        user ? user.id : undefined, request.promoCode);
       return order;
     } catch (error) {
       throw error;
@@ -343,7 +345,7 @@ export class OrderController {
 
   async createOrder(shipTo: Address, product: Product, paymentId: string,
     shipmentId: string, cardLast4: string, cardType: string,
-    buyerEmail: string, customerId?: string): Promise<Order> {
+    buyerEmail: string, customerId?: string, userId?: string, promoCode?: string): Promise<Order> {
     const seller = await this.userRepository.findById(product.sellerId);
     const shipment = await this.easyPostService.purchaseShipment(shipmentId);
     let sellerFee = 0,
@@ -375,16 +377,46 @@ export class OrderController {
       throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
     }
 
-    const total = product.price + tax.tax + shippingCost;
+    // Check for promo
+    let discount: number = 0;
+    let shippingDiscount: number = 0;
+    let promo: PromoWithRelations | null = null;
+    if (promoCode) {
+      promo = await this.promoRepository.findOne({ where: { code: promoCode.toUpperCase() }, include: [{ relation: 'seller' }] })
+      if (promo) {
+        switch (promo.type) {
+          case 'discount':
+            discount = (promo.discountPercent as number / 100) * product.price;
+            break;
+          case 'freeShipping':
+            shippingDiscount = shippingCost;
+            break;
+        }
+      }
+    }
+
+    const total = (product.price - discount) + tax.tax + (shippingCost - shippingDiscount);
     const fees = sellerFee + transferFee + tax.tax + shippingCost;
-    const token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, fees, paymentId, customerId as string);
+
+    const actualFees = fees - discount;
+    let token;
+    if (actualFees > 0) {
+      token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, actualFees, paymentId, customerId as string);
+    } else {
+      token = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string)
+    }
+
+    if (promo && promo.seller) {
+      const freebies = (promo.seller.seller?.freeSales || 0) as number;
+      await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
+    }
+
     if (token) {
       product.sold = true;
       await this.productRepository.update(product);
-
       const order = await this.productRepository.order(product.id).create({
         sellerId: product.sellerId,
-        buyerId: this.user ? this.user.id as string : undefined,
+        buyerId: userId,
         email: buyerEmail,
         purchaseDate: moment.utc().toDate(),
         status: 'purchased',
@@ -402,7 +434,10 @@ export class OrderController {
         paymentType: cardType,
         orderNumber: await this.generateOrderNumber(),
         sellerFee: sellerFee,
-        transferFee: transferFee
+        transferFee: transferFee,
+        discount: discount,
+        shippingDiscount: shippingDiscount,
+        promoCode: promoCode
       });
 
       if (freeSalesChanged) {
@@ -437,10 +472,10 @@ export class OrderController {
       const taxTransaction = await this.taxService.createTransaction(taxRequest);
 
       this.sendGridService.sendTransactional({
-        price: formatMoney(product.price),
+        price: formatMoney(product.price - discount),
         tax: formatMoney(order.tax),
-        shipping: formatMoney(order.shippingCost),
-        total: formatMoney(order.total),
+        shipping: formatMoney(order.shippingCost - shippingDiscount),
+        total: formatMoney(order.total - discount - shippingDiscount),
         to: shipTo,
         orderNumber: order.orderNumber,
         trackingLink: order.trackingUrl,

@@ -168,6 +168,32 @@ export class StripeService {
     }
   }
 
+  async directCharge(sellerId: string, totalCharge: number, totalPayout: number, paymentId: string, customerId?: string | undefined): Promise<string | null> {
+    const charge: Stripe.ChargeCreateParams = {
+      amount: totalCharge,
+      source: paymentId,
+      currency: 'USD',
+      capture: true,
+    }
+    if (customerId) {
+      charge.customer = customerId;
+    }
+    // charge customer
+    const chargeResponse = await stripe.charges.create(charge);
+    if (chargeResponse.outcome?.network_status === 'approved_by_network') {
+      // payout to seller
+      const payout: Stripe.TransferCreateParams = {
+        amount: totalPayout,
+        currency: 'USD',
+        destination: sellerId as string
+      }
+      await stripe.transfers.create(payout);
+      return chargeResponse.id;
+    } else {
+      return null;
+    }
+  }
+
   async uploadFile(file: Buffer): Promise<string> {
     const result = await stripe.files.create({
       file: {

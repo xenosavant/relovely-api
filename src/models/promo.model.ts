@@ -24,7 +24,7 @@ export class Promo extends Entity {
     type: 'string',
     required: true,
   })
-  type: 'discount' | 'freeShipping' | 'freeSale';
+  type: 'discount' | 'freeShipping';
 
   @property({
     type: 'number',
