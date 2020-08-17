@@ -12,6 +12,8 @@ import { StripeService } from '../services/stripe/stripe.service';
 import { UI } from '../models/user-preferences.model';
 import { SellerDetails } from '../models/seller-details';
 import { MailChimpService } from '../services/mailchimp/mailchimp.service';
+import { Promo } from '../models/promo.model';
+import { PromoRepository } from './promo.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -29,11 +31,14 @@ export class UserRepository extends DefaultCrudRepository<
 
   public readonly ratings: HasManyRepositoryFactory<Review, typeof User.prototype.id>;
 
+  public readonly promos: HasManyRepositoryFactory<Promo, typeof User.prototype.id>;
+
   constructor(
     @inject('datasources.db') dataSource: DbDataSource,
     @repository.getter('ProductRepository') protected productRepositoryGetter: Getter<ProductRepository>,
     @repository.getter('OrderRepository') protected orderRepositoryGetter: Getter<OrderRepository>,
     @repository.getter('ReviewRepository') protected reviewRepositoryGetter: Getter<ReviewRepository>,
+    @repository.getter('PromoRepository') protected promoRepositoryGetter: Getter<PromoRepository>,
   ) {
     super(User, dataSource);
     this.sales = this.createHasManyRepositoryFactoryFor('sales', orderRepositoryGetter);
@@ -44,8 +49,10 @@ export class UserRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('products', this.products.inclusionResolver);
     this.reviews = this.createHasManyRepositoryFactoryFor('reviews', reviewRepositoryGetter);
     this.registerInclusionResolver('reviews', this.reviews.inclusionResolver);
-    this.ratings = this.createHasManyRepositoryFactoryFor('products', reviewRepositoryGetter);
-    this.registerInclusionResolver('products', this.products.inclusionResolver);
+    this.ratings = this.createHasManyRepositoryFactoryFor('ratings', reviewRepositoryGetter);
+    this.registerInclusionResolver('ratings', this.products.inclusionResolver);
+    this.promos = this.createHasManyRepositoryFactoryFor('promos', promoRepositoryGetter);
+    this.registerInclusionResolver('promos', this.promos.inclusionResolver);
   }
 
   public async createUser(email: string, type: 'seller' | 'member', stripeId: string, username?: string,

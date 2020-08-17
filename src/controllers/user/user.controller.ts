@@ -22,7 +22,7 @@ import {
   RestBindings
 } from '@loopback/rest';
 import { User, UserWithRelations, Product, Order } from '../../models';
-import { UserRepository, ProductRepository, OrderRepository } from '../../repositories';
+import { UserRepository, ProductRepository, OrderRepository, PromoRepository } from '../../repositories';
 import { UserList, userListFields, userAuthFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
@@ -53,11 +53,16 @@ import { SupportRequest } from './request/support.request';
 import moment from 'moment';
 import { MailingListSubscriptionRequest } from './request/mailing-list-subscription.request.interface';
 import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { Promo } from '../../models/promo.model';
+import { PromoResponse } from './response/promo.repsone';
+import { sleep } from '../../helpers/sleep';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
     @repository(ProductRepository)
     public productsRepository: ProductRepository,
     @repository(OrderRepository)
@@ -637,6 +642,43 @@ export class UserController {
     await this.mailChimpService.addMember(request.email);
   }
 
+  @authenticate('jwt')
+  @get('/users/promo', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Promo, { includeRelations: true }),
+          },
+        },
+      },
+    },
+  })
+  async promo(
+    @param.query.string('code') code: string
+  ): Promise<PromoResponse> {
+    const user = await this.userRepository.findById(this.user.id, { fields: { usedPromos: true } });
+    await sleep(1000);
+    if (!user) {
+      throw new HttpErrors.Forbidden;
+    }
+    const promo = await this.promoRepository.findOne({ where: { code: code } });
+    if (!promo) {
+      return {
+        rejectionReason: 'Invalid Promo Code'
+      }
+    }
+    if (user.usedPromos && user.usedPromos.includes(promo.code)) {
+      return {
+        rejectionReason: `You've already used that code`
+      }
+    }
+    return {
+      promo: promo
+    }
+  }
+
   @post('/users/stripe-webhook', {
     responses: {
       '204': {
@@ -707,6 +749,7 @@ export class UserController {
         break;
     }
   }
+
 
 
 }

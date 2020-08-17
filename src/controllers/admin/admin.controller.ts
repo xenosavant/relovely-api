@@ -1,12 +1,12 @@
 import { repository } from '@loopback/repository';
-import { UserRepository } from '../../repositories';
+import { UserRepository, PromoRepository } from '../../repositories';
 import { inject, service } from '@loopback/core';
 import { AppCredentialService } from '../../services/authentication/credential.service';
 import { TokenServiceBindings } from '../../keys/token-service.bindings';
 import { TokenService, authenticate } from '@loopback/authentication';
 import { SendgridService, InstagramService } from '../../services';
 import { StripeService } from '../../services/stripe/stripe.service';
-import { post, requestBody, getModelSchemaRef, HttpErrors, get } from '@loopback/rest';
+import { post, requestBody, getModelSchemaRef, HttpErrors, get, param } from '@loopback/rest';
 import { SellerApplicationRequest } from '../user/request/seller-application.request';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
@@ -15,6 +15,7 @@ import { ApproveSellerRequest } from '../user/request/approve-seller.request';
 import { User } from '../../models';
 import { userListFields } from '../user/response/user-list.interface';
 import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { Promo } from '../../models/promo.model';
 
 export class AdminController {
   constructor(
@@ -33,13 +34,15 @@ export class AdminController {
     @service(StripeService)
     public stripeService: StripeService,
     @service(MailChimpService)
-    public mailChimpService: MailChimpService
+    public mailChimpService: MailChimpService,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
   ) { }
 
 
   @authenticate('jwt')
   @post('/admin/create-seller')
-  async create(
+  async createSeller(
     @requestBody()
     request: SellerApplicationRequest
   ): Promise<void> {
@@ -120,15 +123,40 @@ export class AdminController {
 
   @authenticate('jwt')
   @get('/admin/sellers')
-  async favorites(
+  async sellers(
+    @param.query.string('unnaproved') unnaproved?: string,
   ): Promise<User[]> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
+    const where: any = { type: 'seller', active: true };
+    if (unnaproved) {
+      where['seller.approved'] = false;
+    }
     return await this.userRepository.find({
-      where: { type: 'seller', 'seller.approved': false, active: true } as any
+      where: where
     });
+  }
+
+  @authenticate('jwt')
+  @get('/admin/promos')
+  async promos(
+  ): Promise<Promo[]> {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
+      throw new HttpErrors.Forbidden();
+    }
+    return await this.promoRepository.find({ where: {}, include: [{ relation: 'seller', scope: { fields: userListFields } }] });
+  }
+
+  @authenticate('jwt')
+  @post('/admin/create-promo')
+  async createPromo(
+    @requestBody()
+    promo: any
+  ): Promise<void> {
+    await this.promoRepository.create(promo);
   }
 
 }
