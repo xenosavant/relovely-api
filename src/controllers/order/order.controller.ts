@@ -406,9 +406,14 @@ export class OrderController {
       token = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string)
     }
 
-    if (promo && promo.seller) {
-      const freebies = (promo.seller.seller?.freeSales || 0) as number;
-      await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
+    if (promo) {
+      if (promo.seller) {
+        const freebies = (promo.seller.seller?.freeSales || 0) as number;
+        await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
+      }
+      if (userId) {
+        await this.userRepository.updateById(userId, { $push: { usedPromos: promo.code } } as any)
+      }
     }
 
     if (token) {
