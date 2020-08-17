@@ -61,7 +61,6 @@ export class AdminController {
     await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
       missingInfo: ['external_account'],
       errors: [],
-      approved: false,
       freeSales: 3,
       verificationStatus: 'unverified',
       address: { ...request.address, name: request.firstName + request.lastName } as any
@@ -124,15 +123,15 @@ export class AdminController {
   @authenticate('jwt')
   @get('/admin/sellers')
   async sellers(
-    @param.query.string('unnaproved') unnaproved?: string,
+    @param.query.string('unapproved') unapproved?: string,
   ): Promise<User[]> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
     const where: any = { type: 'seller', active: true };
-    if (unnaproved) {
-      where['seller.approved'] = false;
+    if (unapproved === 'true') {
+      where['seller.approved'] = { exists: false };
     }
     return await this.userRepository.find({
       where: where

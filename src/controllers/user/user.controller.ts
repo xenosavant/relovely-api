@@ -386,7 +386,6 @@ export class UserController {
       errors: [],
       freeSales: 3,
       verificationStatus: 'unverified',
-      approved: false,
       socialChannels: channels,
       address: request.address
     });
