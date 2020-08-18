@@ -670,7 +670,7 @@ export class UserController {
     }
     if (user.usedPromos && user.usedPromos.includes(promo.code)) {
       return {
-        rejectionReason: `You've already used that code`
+        rejectionReason: `This promo code can only be used once`
       }
     }
     return {

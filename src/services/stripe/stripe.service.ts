@@ -168,7 +168,7 @@ export class StripeService {
     }
   }
 
-  async directCharge(sellerId: string, totalCharge: number, totalPayout: number, paymentId: string, customerId?: string | undefined): Promise<string | null> {
+  async directCharge(sellerId: string, totalCharge: number, totalPayout: number, paymentId: string, customerId?: string | undefined): Promise<{ payout: string, charge: string } | null> {
     const charge: Stripe.ChargeCreateParams = {
       amount: totalCharge,
       source: paymentId,
@@ -187,8 +187,8 @@ export class StripeService {
         currency: 'USD',
         destination: sellerId as string
       }
-      await stripe.transfers.create(payout);
-      return chargeResponse.id;
+      const payoutResponse = await stripe.transfers.create(payout);
+      return { charge: chargeResponse.id, payout: payoutResponse.id };
     } else {
       return null;
     }

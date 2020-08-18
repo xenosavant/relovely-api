@@ -66,6 +66,11 @@ export class Order extends Entity {
   public stripeChargeId: string;
 
   @property({
+    required: false,
+  })
+  public stripePayoutId?: string;
+
+  @property({
     type: 'string',
     required: true,
   })

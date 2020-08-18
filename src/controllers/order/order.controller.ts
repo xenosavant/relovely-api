@@ -399,24 +399,18 @@ export class OrderController {
     const fees = sellerFee + transferFee + tax.tax + shippingCost;
 
     const actualFees = fees - discount;
-    let token;
+    let charge, payout = undefined;
     if (actualFees > 0) {
-      token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, actualFees, paymentId, customerId as string);
+      charge = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, actualFees, paymentId, customerId as string);
     } else {
-      token = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string)
-    }
-
-    if (promo) {
-      if (promo.seller) {
-        const freebies = (promo.seller.seller?.freeSales || 0) as number;
-        await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
-      }
-      if (userId) {
-        await this.userRepository.updateById(userId, { $push: { usedPromos: promo.code } } as any)
+      const response = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string);
+      if (response) {
+        charge = response.charge;
+        payout = response.payout;
       }
     }
 
-    if (token) {
+    if (charge) {
       product.sold = true;
       await this.productRepository.update(product);
       const order = await this.productRepository.order(product.id).create({
@@ -425,7 +419,8 @@ export class OrderController {
         email: buyerEmail,
         purchaseDate: moment.utc().toDate(),
         status: 'purchased',
-        stripeChargeId: token,
+        stripeChargeId: charge,
+        stripePayoutId: payout,
         shipmentId: shipment.shipmentId,
         trackerId: shipment.trackerId,
         shippingCarrier: 'USPS',
@@ -447,6 +442,16 @@ export class OrderController {
 
       if (freeSalesChanged) {
         await this.userRepository.updateById(product.sellerId, { 'seller.freeSales': (seller.seller?.freeSales as number) - 1 } as any)
+      }
+
+      if (promo) {
+        if (promo.seller) {
+          const freebies = (promo.seller.seller?.freeSales || 0) as number;
+          await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
+        }
+        if (userId) {
+          await this.userRepository.updateById(userId, { $push: { usedPromos: promo.code } } as any)
+        }
       }
 
       // TODO: Move this
