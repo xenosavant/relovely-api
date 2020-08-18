@@ -25,7 +25,7 @@ export class TaxService {
 
   async calculateTax(request: TaxCalculationRequest): Promise<TaxCalculationResponse> {
     const nexuses = ['NJ'];
-    if (nexuses.includes(request.toAddress.state) || nexuses.includes(request.fromAddress.state)) {
+    if (nexuses.includes(request.toAddress.state)) {
       return new Promise((resolve, reject) => {
         const taxRequest: any =
         {

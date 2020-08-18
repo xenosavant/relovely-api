@@ -9,4 +9,5 @@ export interface OrderRequest {
   cardType?: string;
   createAccount?: boolean;
   joinMailingList?: boolean;
+  promoCode?: string;
 }

@@ -22,7 +22,7 @@ import {
   RestBindings
 } from '@loopback/rest';
 import { User, UserWithRelations, Product, Order } from '../../models';
-import { UserRepository, ProductRepository, OrderRepository } from '../../repositories';
+import { UserRepository, ProductRepository, OrderRepository, PromoRepository } from '../../repositories';
 import { UserList, userListFields, userAuthFields } from './response/user-list.interface';
 import { UserDetail } from './response/user-detail.interface';
 import { Dictionary } from 'express-serve-static-core';
@@ -51,11 +51,18 @@ import { productListFields } from '../product/response/product-list.interface';
 import { httpsGetAsync } from '@loopback/testlab';
 import { SupportRequest } from './request/support.request';
 import moment from 'moment';
+import { MailingListSubscriptionRequest } from './request/mailing-list-subscription.request.interface';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { Promo } from '../../models/promo.model';
+import { PromoResponse } from './response/promo.repsone';
+import { sleep } from '../../helpers/sleep';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
     @repository(ProductRepository)
     public productsRepository: ProductRepository,
     @repository(OrderRepository)
@@ -71,7 +78,9 @@ export class UserController {
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
     @service(SendgridService)
-    public sendGridService: SendgridService
+    public sendGridService: SendgridService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
   @authenticate('jwt')
@@ -368,38 +377,17 @@ export class UserController {
       channels.push(request.channel3)
     }
 
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
+    const downcasedEmail = request.email.toLowerCase();
 
-    await this.userRepository.create({
-      active: true,
-      firstName: request.firstName,
-      lastName: request.lastName,
-      email: request.email.toLowerCase(),
-      type: 'seller',
-      emailVerified: false,
-      emailVerificationCode: verficationCodeString,
-      instagramUsername: request.instagramUsername,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      seller: {
-        missingInfo: ['external_account'],
-        errors: [],
-        freeSales: 3,
-        verificationStatus: 'unverified',
-        approved: false,
-        socialChannels: channels
-      }
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+
+    await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
+      missingInfo: ['external_account'],
+      errors: [],
+      freeSales: 3,
+      verificationStatus: 'unverified',
+      socialChannels: channels,
+      address: request.address
     });
   }
 
@@ -633,6 +621,63 @@ export class UserController {
     });
   }
 
+  @post('/users/subscribe', {
+    responses: {
+      '204': {
+        description: 'Subscription success',
+      },
+    },
+  })
+  async subscribe(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SellerApplicationRequest),
+        },
+      },
+    })
+    request: SellerApplicationRequest,
+  ): Promise<void> {
+    await this.mailChimpService.addMember(request.email);
+  }
+
+  @authenticate('jwt')
+  @get('/users/promo', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Promo, { includeRelations: true }),
+          },
+        },
+      },
+    },
+  })
+  async promo(
+    @param.query.string('code') code: string
+  ): Promise<PromoResponse> {
+    const user = await this.userRepository.findById(this.user.id, { fields: { usedPromos: true } });
+    await sleep(1000);
+    if (!user) {
+      throw new HttpErrors.Forbidden;
+    }
+    const promo = await this.promoRepository.findOne({ where: { code: code.toUpperCase() } });
+    if (!promo) {
+      return {
+        rejectionReason: 'Invalid Promo Code'
+      }
+    }
+    if (user.usedPromos && user.usedPromos.includes(promo.code)) {
+      return {
+        rejectionReason: `This promo code can only be used once`
+      }
+    }
+    return {
+      promo: promo
+    }
+  }
+
   @post('/users/stripe-webhook', {
     responses: {
       '204': {
@@ -703,6 +748,7 @@ export class UserController {
         break;
     }
   }
+
 
 
 }

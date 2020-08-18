@@ -1,12 +1,12 @@
 import { repository } from '@loopback/repository';
-import { UserRepository } from '../../repositories';
+import { UserRepository, PromoRepository } from '../../repositories';
 import { inject, service } from '@loopback/core';
 import { AppCredentialService } from '../../services/authentication/credential.service';
 import { TokenServiceBindings } from '../../keys/token-service.bindings';
 import { TokenService, authenticate } from '@loopback/authentication';
 import { SendgridService, InstagramService } from '../../services';
 import { StripeService } from '../../services/stripe/stripe.service';
-import { post, requestBody, getModelSchemaRef, HttpErrors, get } from '@loopback/rest';
+import { post, requestBody, getModelSchemaRef, HttpErrors, get, param } from '@loopback/rest';
 import { SellerApplicationRequest } from '../user/request/seller-application.request';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
@@ -14,6 +14,8 @@ import * as crypto from 'crypto'
 import { ApproveSellerRequest } from '../user/request/approve-seller.request';
 import { User } from '../../models';
 import { userListFields } from '../user/response/user-list.interface';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { Promo } from '../../models/promo.model';
 
 export class AdminController {
   constructor(
@@ -30,13 +32,17 @@ export class AdminController {
     @service(InstagramService)
     public instagramService: InstagramService,
     @service(StripeService)
-    public stripeService: StripeService
+    public stripeService: StripeService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
   ) { }
 
 
   @authenticate('jwt')
   @post('/admin/create-seller')
-  async create(
+  async createSeller(
     @requestBody()
     request: SellerApplicationRequest
   ): Promise<void> {
@@ -50,39 +56,14 @@ export class AdminController {
       throw new HttpErrors.Conflict('Email already exists');
     }
 
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
+    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
 
-    await this.userRepository.create({
-      active: true,
-      firstName: request.firstName,
-      lastName: request.lastName,
-      email: downcasedEmail,
-      type: 'seller',
-      emailVerified: false,
-      instagramUsername: request.instagramUsername,
-      username: request.instagramUsername,
-      emailVerificationCode: verficationCodeString,
-      favorites: [],
-      followers: [],
-      following: [],
-      addresses: [],
-      cards: [],
-      preferences: {
-        sizes: [],
-        colors: [],
-        prices: []
-      },
-      seller: {
-        missingInfo: ['external_account'],
-        errors: [],
-        approved: false,
-        freeSales: 3,
-        verificationStatus: 'unverified',
-        address: { ...request.address, name: request.firstName + request.lastName }
-      }
+    await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
+      missingInfo: ['external_account'],
+      errors: [],
+      freeSales: 3,
+      verificationStatus: 'unverified',
+      address: { ...request.address, name: request.firstName + request.lastName } as any
     });
   }
 
@@ -103,6 +84,8 @@ export class AdminController {
     }
 
     if (request.approved) {
+      await this.mailChimpService.addSeller(user.email);
+      await this.userRepository.addRemoveMailingList(user, true);
       if (/@/.test(user.instagramUsername as string)) {
         user.instagramUsername = user.instagramUsername?.replace(/@/, '');
       }
@@ -116,11 +99,8 @@ export class AdminController {
         });
       });
 
-      const stripeId = await this.stripeService.createCustomer(user.email);
-
       await this.userRepository.updateById(user.id,
         {
-          stripeCustomerId: stripeId,
           active: request.approved,
           username: user.instagramUsername,
           instagramUsername: user.instagramUsername,
@@ -142,15 +122,54 @@ export class AdminController {
 
   @authenticate('jwt')
   @get('/admin/sellers')
-  async favorites(
+  async sellers(
+    @param.query.string('unapproved') unapproved?: string,
   ): Promise<User[]> {
     const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
+    const where: any = { type: 'seller' };
+    if (unapproved === 'true') {
+      where['seller.approved'] = { exists: false };
+    }
     return await this.userRepository.find({
-      where: { type: 'seller', 'seller.approved': false, active: true } as any
+      where: where
     });
+  }
+
+  @authenticate('jwt')
+  @get('/admin/members')
+  async members(
+  ): Promise<User[]> {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
+      throw new HttpErrors.Forbidden();
+    }
+    const where: any = { type: 'member' };
+    return await this.userRepository.find({
+      where: where
+    });
+  }
+
+  @authenticate('jwt')
+  @get('/admin/promos')
+  async promos(
+  ): Promise<Promo[]> {
+    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+    if (!currentUser || !currentUser.admin) {
+      throw new HttpErrors.Forbidden();
+    }
+    return await this.promoRepository.find({ where: {}, include: [{ relation: 'seller', scope: { fields: userListFields } }] });
+  }
+
+  @authenticate('jwt')
+  @post('/admin/create-promo')
+  async createPromo(
+    @requestBody()
+    promo: any
+  ): Promise<void> {
+    await this.promoRepository.create(promo);
   }
 
 }

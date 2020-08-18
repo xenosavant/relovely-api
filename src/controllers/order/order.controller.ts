@@ -20,7 +20,7 @@ import {
   Trie,
 } from '@loopback/rest';
 import { Order, User, Product, ProductRelations, ProductWithRelations, UserWithRelations } from '../../models';
-import { OrderRepository, UserRepository, ProductRepository } from '../../repositories';
+import { OrderRepository, UserRepository, ProductRepository, PromoRepository } from '../../repositories';
 import { inject, service } from '@loopback/core';
 import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
@@ -40,6 +40,10 @@ import { SendgridService } from '../../services';
 import { formatMoney, getShippingCost } from '../../util/format';
 import { TaxTransactionRequest } from '../../services/tax/tax-transaction.request';
 import { Card } from '../../models/card.model';
+import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import { UI } from '../../models/user-preferences.model';
+import { request } from 'http';
+import { Promo, PromoWithRelations } from '../../models/promo.model';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -47,6 +51,8 @@ export class OrderController {
   constructor(
     @repository(OrderRepository)
     public orderRepository: OrderRepository,
+    @repository(PromoRepository)
+    public promoRepository: PromoRepository,
     @repository(UserRepository)
     public userRepository: UserRepository,
     @repository(ProductRepository)
@@ -61,6 +67,8 @@ export class OrderController {
     public taxService: TaxService,
     @service(SendgridService)
     public sendGridService: SendgridService,
+    @service(MailChimpService)
+    public mailChimpService: MailChimpService
   ) { }
 
   @authenticate('jwt')
@@ -77,15 +85,18 @@ export class OrderController {
     @requestBody() request: OrderRequest
   ): Promise<Order> {
     const product: ProductWithRelations = await this.productRepository.findById(id);
-    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true, email: true } });
+    const buyer: UserWithRelations = await this.userRepository.findById(this.user.id, { fields: { stripeCustomerId: true, addresses: true, cards: true, email: true, ui: true } });
     if (!buyer || !buyer.stripeCustomerId) {
-      throw new HttpErrors.BadRequest('Something went wrong there...please try your purchase again');
+      throw new HttpErrors.BadRequest('Something went wrong there...please contact support');
     }
     if (!product.sold) {
       const card = buyer.cards.find(c => c.stripeId === request.paymentId) as Card;
       try {
+        if (request.joinMailingList) {
+          await this.addToMailingList(buyer.email as string, buyer);
+        }
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId);
+          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode);
         return order;
       } catch (error) {
         throw error;
@@ -121,17 +132,17 @@ export class OrderController {
         await this.sendGridService.sendEmail(user.email,
           'Welcome To Relovely!',
           `Click <a href="${process.env.WEB_URL}/account/verify?type=guest&code=${encodeURI(user.emailVerificationCode as string)}">here</a> to finish setting up your account.`);
+      } else {
+        throw new HttpErrors.Conflict('That email already exists');
       }
     }
     if (request.joinMailingList) {
-      // TODO: Add to mailchimp
+      await this.addToMailingList(request.email as string, user);
     }
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-        request.last4 as string, request.cardType as string, request.email as string);
-      if (request.createAccount) {
-        await this.orderRepository.updateById(order.id, { buyerId: (user as UserWithRelations).id })
-      }
+        request.last4 as string, request.cardType as string, request.email as string, undefined,
+        user ? user.id : undefined, request.promoCode);
       return order;
     } catch (error) {
       throw error;
@@ -334,7 +345,7 @@ export class OrderController {
 
   async createOrder(shipTo: Address, product: Product, paymentId: string,
     shipmentId: string, cardLast4: string, cardType: string,
-    buyerEmail: string, customerId?: string): Promise<Order> {
+    buyerEmail: string, customerId?: string, userId?: string, promoCode?: string): Promise<Order> {
     const seller = await this.userRepository.findById(product.sellerId);
     const shipment = await this.easyPostService.purchaseShipment(shipmentId);
     let sellerFee = 0,
@@ -366,20 +377,50 @@ export class OrderController {
       throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
     }
 
-    const total = product.price + tax.tax + shippingCost;
+    // Check for promo
+    let discount: number = 0;
+    let shippingDiscount: number = 0;
+    let promo: PromoWithRelations | null = null;
+    if (promoCode) {
+      promo = await this.promoRepository.findOne({ where: { code: promoCode.toUpperCase() }, include: [{ relation: 'seller' }] })
+      if (promo) {
+        switch (promo.type) {
+          case 'discount':
+            discount = (promo.discountPercent as number / 100) * product.price;
+            break;
+          case 'freeShipping':
+            shippingDiscount = shippingCost;
+            break;
+        }
+      }
+    }
+
+    const total = (product.price - discount) + tax.tax + (shippingCost - shippingDiscount);
     const fees = sellerFee + transferFee + tax.tax + shippingCost;
-    const token = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, fees, paymentId, customerId as string);
-    if (token) {
+
+    const actualFees = fees - discount;
+    let charge, payout = undefined;
+    if (actualFees > 0) {
+      charge = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, actualFees, paymentId, customerId as string);
+    } else {
+      const response = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string);
+      if (response) {
+        charge = response.charge;
+        payout = response.payout;
+      }
+    }
+
+    if (charge) {
       product.sold = true;
       await this.productRepository.update(product);
-
       const order = await this.productRepository.order(product.id).create({
         sellerId: product.sellerId,
-        buyerId: this.user ? this.user.id as string : undefined,
+        buyerId: userId,
         email: buyerEmail,
         purchaseDate: moment.utc().toDate(),
         status: 'purchased',
-        stripeChargeId: token,
+        stripeChargeId: charge,
+        stripePayoutId: payout,
         shipmentId: shipment.shipmentId,
         trackerId: shipment.trackerId,
         shippingCarrier: 'USPS',
@@ -393,11 +434,24 @@ export class OrderController {
         paymentType: cardType,
         orderNumber: await this.generateOrderNumber(),
         sellerFee: sellerFee,
-        transferFee: transferFee
+        transferFee: transferFee,
+        discount: discount,
+        shippingDiscount: shippingDiscount,
+        promoCode: promoCode
       });
 
       if (freeSalesChanged) {
         await this.userRepository.updateById(product.sellerId, { 'seller.freeSales': (seller.seller?.freeSales as number) - 1 } as any)
+      }
+
+      if (promo) {
+        if (promo.seller) {
+          const freebies = (promo.seller.seller?.freeSales || 0) as number;
+          await this.userRepository.updateById(promo.sellerId, { 'seller.freeSales': freebies + 1 } as any)
+        }
+        if (userId) {
+          await this.userRepository.updateById(userId, { $push: { usedPromos: promo.code } } as any)
+        }
       }
 
       // TODO: Move this
@@ -428,10 +482,10 @@ export class OrderController {
       const taxTransaction = await this.taxService.createTransaction(taxRequest);
 
       this.sendGridService.sendTransactional({
-        price: formatMoney(product.price),
+        price: formatMoney(product.price - discount),
         tax: formatMoney(order.tax),
-        shipping: formatMoney(order.shippingCost),
-        total: formatMoney(order.total),
+        shipping: formatMoney(order.shippingCost - shippingDiscount),
+        total: formatMoney(order.total - discount - shippingDiscount),
         to: shipTo,
         orderNumber: order.orderNumber,
         trackingLink: order.trackingUrl,
@@ -455,6 +509,15 @@ export class OrderController {
       throw new HttpErrors.BadRequest('Charge was declined');
     }
   }
+
+  async addToMailingList(email: string, user?: UserWithRelations | null) {
+    await this.mailChimpService.addMember(email);
+    if (user) {
+      await this.userRepository.addRemoveMailingList(user, true);
+    }
+  }
+
+
 }
 
 
