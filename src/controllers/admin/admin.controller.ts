@@ -103,7 +103,7 @@ export class AdminController {
         {
           username: user.instagramUsername,
           instagramUsername: user.instagramUsername,
-          'seller.approved': request.approved,
+          'seller.approved': true,
           'seller.featured': request.featured
         } as any);
       await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
@@ -134,9 +134,10 @@ export class AdminController {
         { 'seller.approved': false, active: true }
       ]
     }
-    return await this.userRepository.find({
+    const values = await this.userRepository.find({
       where: where
     });
+    return values;
   }
 
   @authenticate('jwt')
