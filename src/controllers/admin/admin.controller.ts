@@ -101,7 +101,6 @@ export class AdminController {
 
       await this.userRepository.updateById(user.id,
         {
-          active: request.approved,
           username: user.instagramUsername,
           instagramUsername: user.instagramUsername,
           'seller.approved': request.approved,
@@ -112,7 +111,6 @@ export class AdminController {
     } else {
       await this.userRepository.updateById(user.id,
         {
-          active: false,
           'seller.approved': false,
           'seller.featured': false
         } as any);
@@ -131,7 +129,10 @@ export class AdminController {
     }
     const where: any = { type: 'seller' };
     if (unapproved === 'true') {
-      where['seller.approved'] = { exists: false };
+      where.or = [
+        { 'seller.approved': { exists: false } },
+        { 'seller.approved': false, active: true }
+      ]
     }
     return await this.userRepository.find({
       where: where
