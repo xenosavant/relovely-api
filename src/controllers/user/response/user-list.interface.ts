@@ -19,7 +19,7 @@ export const userDetailFields = {
     false, instagramUserId: false,
   facebookAuthToken: false, emailVerificationCode: false,
   passwordVerificationCode: false, cards: false, addresses: false,
-  preferences: false, stripeCustomerId: false, email: false
+  preferences: false, stripeCustomerId: false, email: false, seller: false
 };
 
 export const userListFields = {
