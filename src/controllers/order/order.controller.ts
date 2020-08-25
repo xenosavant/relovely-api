@@ -395,15 +395,15 @@ export class OrderController {
       }
     }
 
-    const total = (product.price - discount) + tax.tax + (shippingCost - shippingDiscount);
-    const fees = sellerFee + transferFee + tax.tax + shippingCost;
+    const totalCharge = (product.price - discount) + tax.tax + (shippingCost - shippingDiscount);
+    const deductions = sellerFee + transferFee + tax.tax + shippingCost;
 
-    const actualFees = fees - discount;
+    const actualFees = deductions - discount - shippingDiscount;
     let charge, payout = undefined;
     if (actualFees > 0) {
-      charge = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, total, actualFees, paymentId, customerId as string);
+      charge = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, totalCharge, actualFees, paymentId, customerId as string);
     } else {
-      const response = await this.stripeService.directCharge(seller.stripeSellerId as string, total, total - actualFees, paymentId, customerId as string);
+      const response = await this.stripeService.directCharge(seller.stripeSellerId as string, totalCharge, totalCharge - actualFees, paymentId, customerId as string);
       if (response) {
         charge = response.charge;
         payout = response.payout;
