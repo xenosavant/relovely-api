@@ -180,6 +180,9 @@ export class UserController {
       response.city = (response.returnAddress) ? response.returnAddress.city : null;
       response.state = (response.returnAddress) ? response.returnAddress.state : null;
       delete response.products;
+      if (response.returnAddress) {
+        delete response.returnAddress;
+      }
     }
     promises.push(
       this.productsRepository.find({
