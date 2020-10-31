@@ -234,6 +234,17 @@ export class UserController {
   }
 
   @authenticate('jwt')
+  @get('/users/sellers')
+  async sellers(): Promise<User[]> {
+    const where: any = { type: 'seller', 'seller.approved': true };
+    const sellers = await this.userRepository.find({
+      where: where,
+      include: [{ relation: 'products' }]
+    });
+    return sellers.filter(s => s.products && s.products.some(p => !p.sold));
+  }
+
+  @authenticate('jwt')
   @patch('/users/{id}', {
     responses: {
       '200': {

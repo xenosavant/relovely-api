@@ -129,10 +129,7 @@ export class AdminController {
     }
     const where: any = { type: 'seller' };
     if (unapproved === 'true') {
-      where.or = [
-        { 'seller.approved': { exists: false } },
-        { 'seller.approved': false, active: true }
-      ]
+      where['seller.approved'] = { exists: false };
     }
     const values = await this.userRepository.find({
       where: where
