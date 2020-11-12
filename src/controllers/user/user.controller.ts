@@ -233,7 +233,6 @@ export class UserController {
     });
   }
 
-  @authenticate('jwt')
   @get('/users/sellers')
   async sellers(): Promise<User[]> {
     const where: any = { type: 'seller', 'seller.approved': true };

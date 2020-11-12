@@ -83,7 +83,7 @@ export class ProductController {
       termsArray.forEach(term => {
         where.and.push({
           or: [{ title: { regexp: `/${term}/i` } },
-          { tags: { regexp: `/^${term}/i` } }]
+          { tags: { regexp: `/^${term}/i` } }, { brand: { regexp: `/^${term}/i` } }]
         });
       })
     }
