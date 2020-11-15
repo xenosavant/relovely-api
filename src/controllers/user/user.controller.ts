@@ -744,7 +744,7 @@ export class UserController {
     const signature = this.request.headers['stripe-signature'];
     try {
       event = this.stripeService.retrieveEvent(request, signature);
-    } catch (err) {
+    } catch (e) {
       Sentry.captureException(e);
       throw new HttpErrors.BadRequest;
     }
