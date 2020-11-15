@@ -61,6 +61,8 @@
     "@loopback/service-proxy": "^2.0.2",
     "@mailchimp/mailchimp_marketing": "^3.0.12",
     "@sendgrid/mail": "^6.5.5",
+    "@sentry/node": "^5.27.4",
+    "@sentry/tracing": "^5.27.4",
     "@types/bcrypt": "^3.0.0",
     "@types/request-promise": "^4.1.45",
     "bcrypt": "^3.0.8",
@@ -75,7 +77,8 @@
     "stripe": "^8.52.0",
     "strong-error-handler": "^3.4.0",
     "taxjar": "^3.2.0",
-    "tsc-watch": "^4.1.0"
+    "tsc-watch": "^4.1.0",
+    "tslib": "^2.0.3"
   },
   "devDependencies": {
     "@loopback/build": "^5.0.0",

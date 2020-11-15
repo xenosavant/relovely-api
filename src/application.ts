@@ -19,12 +19,32 @@ import { JWTService } from './services/authentication/jwt.service';
 import { BcryptHasher } from './services/authentication/hash.bcrypt';
 import { AppCredentialService } from './services/authentication/credential.service';
 import { JWTAuthenticationStrategy } from './authentication/jwt-strategy';
+import * as Sentry from '@sentry/node';
+import * as Tracing from '@sentry/tracing';
+
+declare global {
+  namespace NodeJS {
+    interface Global {
+      __rootdir__: string;
+    }
+  }
+}
+
+global.__rootdir__ = __dirname || process.cwd();
 
 export class RelovelyApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
+
+    Sentry.init({
+      dsn: "https://ec7f96c9e9b94fc2b0e23261de9e428a@o476731.ingest.sentry.io/5516800",
+
+      // We recommend adjusting this value in production, or using tracesSampler
+      // for finer control
+      tracesSampleRate: 1.0,
+    });
 
     // Set up the custom sequence
     this.sequence(Sequence);

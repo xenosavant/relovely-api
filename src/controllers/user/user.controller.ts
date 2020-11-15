@@ -56,6 +56,7 @@ import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 import { Promo } from '../../models/promo.model';
 import { PromoResponse } from './response/promo.repsone';
 import { sleep } from '../../helpers/sleep';
+import * as Sentry from '@sentry/node';
 
 export class UserController {
   constructor(
@@ -113,7 +114,8 @@ export class UserController {
       }
       this.userRepository.updateById(user.id, { lastActive: moment().utc().toDate() })
       return user;
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       throw new HttpErrors.Unauthorized;
     }
   }
@@ -137,7 +139,6 @@ export class UserController {
     if (!id) {
       throw new HttpErrors.BadRequest();
     }
-
     let user: UserWithRelations | null = null;
     const include = [{ relation: 'products', scope: { fields: productDetailFields } }, { relation: 'reviews' }];
     if (/^[a-f\d]{24}$/i.test(id)) {
@@ -155,58 +156,63 @@ export class UserController {
     if (!user) {
       throw new HttpErrors.NotFound();
     }
-    const promiseDictionary: Record<string, any> = {};
-    const response = user as any;
-    const promises: Promise<any>[] = []
-    if (user.type === 'seller') {
+    try {
+      const promiseDictionary: Record<string, any> = {};
+      const response = user as any;
+      const promises: Promise<any>[] = []
+      if (user.type === 'seller') {
+        promises.push(
+          this.userRepository.find({
+            where: { id: { inq: user.followers || [] } },
+            fields: userListFields
+          }).then(result => {
+            promiseDictionary['followers'] = result;
+          }));
+        let rating = 0;
+        if (user.reviews) {
+          rating = (user.reviews.map(val => val.rating).reduce((prev, next) => {
+            return prev + next;
+          }) / user.reviews.length);
+        }
+        response.averageRating = rating;
+        response.products = response.products ? response.products.filter((p: any) => p.active) : [];
+
+        response.listings = response.products ? response.products.filter((p: Product) => !p.sold).sort((a: Product, b: Product) => a.createdOn ? (b.createdOn ? b.createdOn.getTime() : 0) - a.createdOn.getTime() : 1) : [];
+        response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
+        response.city = (response.returnAddress) ? response.returnAddress.city : null;
+        response.state = (response.returnAddress) ? response.returnAddress.state : null;
+        delete response.products;
+        if (response.returnAddress) {
+          delete response.returnAddress;
+        }
+      }
       promises.push(
+        this.productsRepository.find({
+          where: { id: { inq: user.favorites || [] } },
+          fields: productListFields,
+          include: [{ relation: 'seller', scope: { fields: userListFields } }]
+        }).then(result => {
+          promiseDictionary['favorites'] = result;
+        }),
         this.userRepository.find({
-          where: { id: { inq: user.followers || [] } },
+          where: { id: { inq: user.following || [] } },
           fields: userListFields
         }).then(result => {
-          promiseDictionary['followers'] = result;
+          promiseDictionary['following'] = result;
         }));
-      let rating = 0;
-      if (user.reviews) {
-        rating = (user.reviews.map(val => val.rating).reduce((prev, next) => {
-          return prev + next;
-        }) / user.reviews.length);
+
+      await Promise.all(promises);
+
+      for (const key in promiseDictionary) {
+        response[key] = promiseDictionary[key];
       }
-      response.averageRating = rating;
-      response.products = response.products ? response.products.filter((p: any) => p.active) : [];
 
-      response.listings = response.products ? response.products.filter((p: Product) => !p.sold).sort((a: Product, b: Product) => a.createdOn ? (b.createdOn ? b.createdOn.getTime() : 0) - a.createdOn.getTime() : 1) : [];
-      response.sales = response.products ? response.products.filter((p: Product) => p.sold) : [];
-      response.city = (response.returnAddress) ? response.returnAddress.city : null;
-      response.state = (response.returnAddress) ? response.returnAddress.state : null;
-      delete response.products;
-      if (response.returnAddress) {
-        delete response.returnAddress;
-      }
+      const detailResponse = { ...response } as UserDetail;
+      return detailResponse;
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
     }
-    promises.push(
-      this.productsRepository.find({
-        where: { id: { inq: user.favorites || [] } },
-        fields: productListFields,
-        include: [{ relation: 'seller', scope: { fields: userListFields } }]
-      }).then(result => {
-        promiseDictionary['favorites'] = result;
-      }),
-      this.userRepository.find({
-        where: { id: { inq: user.following || [] } },
-        fields: userListFields
-      }).then(result => {
-        promiseDictionary['following'] = result;
-      }));
-
-    await Promise.all(promises);
-
-    for (const key in promiseDictionary) {
-      response[key] = promiseDictionary[key];
-    }
-
-    const detailResponse = { ...response } as UserDetail;
-    return detailResponse;
   }
 
   @get('/users/featured', {
@@ -379,29 +385,34 @@ export class UserController {
       throw new HttpErrors.Conflict('That Email is already in use.');
     }
 
-    const channels = [];
-    if (request.channel1) {
-      channels.push(request.channel1);
-    }
-    if (request.channel2) {
-      channels.push(request.channel2)
-    }
-    if (request.channel3) {
-      channels.push(request.channel3)
-    }
+    try {
 
-    const downcasedEmail = request.email.toLowerCase();
+      const channels = [];
+      if (request.channel1) {
+        channels.push(request.channel1);
+      }
+      if (request.channel2) {
+        channels.push(request.channel2)
+      }
+      if (request.channel3) {
+        channels.push(request.channel3)
+      }
 
-    const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+      const downcasedEmail = request.email.toLowerCase();
 
-    await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
-      missingInfo: ['external_account'],
-      errors: [],
-      freeSales: 3,
-      verificationStatus: 'unverified',
-      socialChannels: channels,
-      address: request.address
-    });
+      const stripeId = await this.stripeService.createCustomer(downcasedEmail);
+
+      await this.userRepository.createUser(downcasedEmail, 'seller', stripeId, request.instagramUsername, request.firstName, request.lastName, {
+        missingInfo: ['external_account'],
+        errors: [],
+        freeSales: 3,
+        verificationStatus: 'unverified',
+        socialChannels: channels,
+        address: request.address
+      });
+    } catch (e) {
+      Sentry.captureException(e);
+    }
   }
 
   @authenticate('jwt')
@@ -445,11 +456,9 @@ export class UserController {
       } as any
       );
       return await this.userRepository.findById(this.user.id);
-    } catch (error) {
-      await this.sendGridService.sendEmail('support@relovely.com',
-        `Seller Verification Error`,
-        error.message);
-      throw new HttpErrors[500]('Someting went wrong...we are looking into it');
+    } catch (e) {
+      Sentry.captureException(e);
+      throw e;
     }
   }
 
@@ -527,13 +536,18 @@ export class UserController {
     })
     request: Partial<SellerAccountRequest>,
   ): Promise<User> {
-    const user = await this.userRepository.findById(this.user.id);
-    const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
-    await this.userRepository.updateById(this.user.id as string, {
-      'seller.verificationStatus': 'review', 'seller.missingInfo': account.requirements?.currently_due || [],
-      'seller.errors': account.requirements?.errors?.map(e => e.reason) || []
-    } as any);
-    return await this.userRepository.findById(this.user.id);
+    try {
+      const user = await this.userRepository.findById(this.user.id);
+      const account = await this.stripeService.updateSeller(user.stripeSellerId as string, request);
+      await this.userRepository.updateById(this.user.id as string, {
+        'seller.verificationStatus': 'review', 'seller.missingInfo': account.requirements?.currently_due || [],
+        'seller.errors': account.requirements?.errors?.map(e => e.reason) || []
+      } as any);
+      return await this.userRepository.findById(this.user.id);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw e;
+    }
   }
 
   @authenticate('jwt')
@@ -558,19 +572,24 @@ export class UserController {
     if (!user.stripeSellerId) {
       throw new HttpErrors.Forbidden('You must fill out the verification form before adding a bank acount.');
     }
-    await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
-    if (user.seller && user.seller.missingInfo) {
-      if (user.seller.missingInfo.indexOf('external_account') > -1) {
-        const updates: string[] = [];
-        user.seller.missingInfo.forEach(item => {
-          if (item !== 'external_account') {
-            updates.push(item);
-          }
-        })
-        await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+    try {
+      await this.stripeService.createBankAccount(user.stripeSellerId as string, request);
+      if (user.seller && user.seller.missingInfo) {
+        if (user.seller.missingInfo.indexOf('external_account') > -1) {
+          const updates: string[] = [];
+          user.seller.missingInfo.forEach(item => {
+            if (item !== 'external_account') {
+              updates.push(item);
+            }
+          })
+          await this.userRepository.updateById(this.user.id as string, { 'seller.missingInfo': updates } as any);
+        }
       }
+      return await this.userRepository.findById(this.user.id);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw e;
     }
-    return await this.userRepository.findById(this.user.id);
   }
 
   @post('/users/support', {
@@ -618,20 +637,25 @@ export class UserController {
     request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-      this.handler(request, response, (err: unknown) => {
-        if (err) reject(err);
-        else {
-          const uploadedFiles = (request.files as any[]);
-          this.stripeService.uploadFile(uploadedFiles[0].buffer).then(result => {
-            response.status(200).send(result);
-            resolve();
-          }, error => {
-            reject(err);
-          })
-        }
+    try {
+      return new Promise<string>((resolve, reject) => {
+        this.handler(request, response, (err: unknown) => {
+          if (err) reject(err);
+          else {
+            const uploadedFiles = (request.files as any[]);
+            this.stripeService.uploadFile(uploadedFiles[0].buffer).then(result => {
+              response.status(200).send(result);
+              resolve();
+            }, error => {
+              reject(err);
+            })
+          }
+        });
       });
-    });
+    } catch (e) {
+      Sentry.captureException(e);
+      throw e;
+    }
   }
 
   @post('/users/subscribe', {
@@ -651,7 +675,11 @@ export class UserController {
     })
     request: SellerApplicationRequest,
   ): Promise<void> {
-    await this.mailChimpService.addMember(request.email);
+    try {
+      await this.mailChimpService.addMember(request.email);
+    } catch (e) {
+      Sentry.captureException(e);
+    }
   }
 
   @authenticate('jwt')
@@ -716,7 +744,8 @@ export class UserController {
     const signature = this.request.headers['stripe-signature'];
     try {
       event = this.stripeService.retrieveEvent(request, signature);
-    } catch (err) {
+    } catch (e) {
+      Sentry.captureException(e);
       throw new HttpErrors.BadRequest;
     }
 
@@ -761,7 +790,4 @@ export class UserController {
         break;
     }
   }
-
-
-
 }

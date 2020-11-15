@@ -1,10 +1,10 @@
 import { CloudinaryService } from "../../services";
 import { service } from "@loopback/core";
-import { getModelSchemaRef, requestBody, post } from "@loopback/rest";
+import { getModelSchemaRef, requestBody, post, HttpErrors } from "@loopback/rest";
 import { AuthResponse } from "../../authentication/auth-response";
 import { SignatureRequest } from './signature.request';
 import { SignatureResponse } from './signature.response';
-import { AppUserProfile } from "../../authentication/app-user-profile";
+import * as Sentry from '@sentry/node';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -37,10 +37,13 @@ export class StorageController {
     })
     request: SignatureRequest,
   ): Promise<SignatureResponse> {
-
-
-    const result = await this.cloudinaryService.getSignature(request.folder, request.timestamp, request.uploadPreset, request.publicId);
-    return { signature: result };
+    try {
+      const result = await this.cloudinaryService.getSignature(request.folder, request.timestamp, request.uploadPreset, request.publicId);
+      return { signature: result };
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...please try your upload again`);
+    }
   }
 
 

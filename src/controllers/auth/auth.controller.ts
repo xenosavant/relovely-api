@@ -18,6 +18,7 @@ import { StripeService } from '../../services/stripe/stripe.service';
 import { User } from '../../models';
 import { sleep } from '../../helpers/sleep';
 import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
+import * as Sentry from '@sentry/node';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -107,6 +108,7 @@ export class AuthController {
     if (!request.email) {
       throw new HttpErrors.Forbidden('Bad Request');
     }
+
     const downcasedEmail = request.email.toLowerCase();
 
     const user = await this.credentialService.verifyCredentials({ identifier: downcasedEmail, password: request.password });
@@ -212,16 +214,21 @@ export class AuthController {
       throw new HttpErrors.Forbidden('That email does not exist in our system.');
     }
 
-    const rand = Math.random().toString();
-    const now = new Date();
-    const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
-      verficationCodeString = verificationCode.digest('hex');
+    try {
+      const rand = Math.random().toString();
+      const now = new Date();
+      const verificationCode = crypto.createHash('sha256').update(rand + now.getDate()),
+        verficationCodeString = verificationCode.digest('hex');
 
-    await this.userRepository.updateById(user.id, { passwordVerificationCode: verficationCodeString });
+      await this.userRepository.updateById(user.id, { passwordVerificationCode: verficationCodeString });
 
-    await this.sendGridService.sendEmail(user.email as string,
-      'Relovely - Reset Password',
-      `Click <a href="${process.env.WEB_URL}/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
+      await this.sendGridService.sendEmail(user.email as string,
+        'Relovely - Reset Password',
+        `Click <a href="${process.env.WEB_URL}/account/reset-password?code=${encodeURI(verficationCodeString)}">here</a> to reset your password.`);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
+    }
   }
 
   @post('auth/password/reset', {
@@ -257,18 +264,23 @@ export class AuthController {
       throw new HttpErrors.Forbidden();
     }
 
-    const hash = await this.credentialService.hashPassword(request.password);
+    try {
+      const hash = await this.credentialService.hashPassword(request.password);
 
-    await this.userRepository.updateById(user.id, {
-      passwordHash: hash,
-      passwordVerificationCode: undefined
-    });
+      await this.userRepository.updateById(user.id, {
+        passwordHash: hash,
+        passwordVerificationCode: undefined
+      });
 
-    const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'internal' });
+      const userProfile = {} as AppUserProfile;
+      Object.assign(userProfile, { id: (user.id as string).toString(), type: 'internal' });
 
-    const jwt = await this.tokenService.generateToken(userProfile);
+      const jwt = await this.tokenService.generateToken(userProfile);
 
-    return { user: user, jwt: jwt };
+      return { user: user, jwt: jwt };
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500];
+    }
   }
 }

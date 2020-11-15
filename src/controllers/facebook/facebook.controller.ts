@@ -15,6 +15,7 @@ import { CloudinaryService } from "../../services";
 import * as fs from 'fs';
 import { StripeService } from '../../services/stripe/stripe.service';
 import { userDetailFields } from '../user/response/user-list.interface';
+import * as Sentry from '@sentry/node';
 
 // Uncomment these imports to begin using these cool features!
 
@@ -67,48 +68,60 @@ export class FacebookController {
 
     let existing = false;
     let user: UserWithRelations;
-    if (existingFacebookUser) {
-      await this.userRepository.updateById(existingFacebookUser.id, { facebookAuthToken: longLivedToken.access_token });
-      user = existingFacebookUser;
-      existing = true;
-    } else {
-      const existingEmail = (await this.userRepository.findOne({ where: { email: fbuser.email } })) as UserWithRelations;
+    try {
+      if (existingFacebookUser) {
+        await this.userRepository.updateById(existingFacebookUser.id, { facebookAuthToken: longLivedToken.access_token });
+        user = existingFacebookUser;
+        existing = true;
+      } else {
+        const existingEmail = (await this.userRepository.findOne({ where: { email: fbuser.email } })) as UserWithRelations;
 
-      if (existingEmail) {
-        throw new HttpErrors.Conflict('The email asociated with that account is not available.');
+        if (existingEmail) {
+          throw new HttpErrors.Conflict('The email asociated with that account is not available.');
+        }
+
+        try {
+
+        } catch (e) {
+          Sentry.captureException(e);
+          throw new HttpErrors[500];
+        }
+
+        const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
+
+        user = await this.userRepository.create({
+          active: true,
+          stripeCustomerId: stripeId,
+          email: fbuser.email,
+          type: 'member',
+          facebookAuthToken: longLivedToken.access_token,
+          facebookUserId: fbuser.id,
+          favorites: [],
+          following: [],
+          addresses: [],
+          cards: [],
+          preferences: {
+            sizes: [],
+            colors: [],
+            prices: []
+          }
+        });
+        const prefix = 'data:image/jpeg;base64,';
+        let imageBuffer = Buffer.from(picture);
+        let imageBase64 = imageBuffer.toString('base64');
+        const cloudinaryResponse = await this.cloudinaryService.upload(prefix + imageBase64, user.id as string);
+        this.userRepository.updateById(user.id, { profileImageUrl: cloudinaryResponse.url });
       }
 
-      const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
+      const userProfile = {} as AppUserProfile;
+      Object.assign(userProfile, { id: (user.id as string).toString(), type: 'facebook' });
 
-      user = await this.userRepository.create({
-        active: true,
-        stripeCustomerId: stripeId,
-        email: fbuser.email,
-        type: 'member',
-        facebookAuthToken: longLivedToken.access_token,
-        facebookUserId: fbuser.id,
-        favorites: [],
-        following: [],
-        addresses: [],
-        cards: [],
-        preferences: {
-          sizes: [],
-          colors: [],
-          prices: []
-        }
-      });
-      const prefix = 'data:image/jpeg;base64,';
-      let imageBuffer = Buffer.from(picture);
-      let imageBase64 = imageBuffer.toString('base64');
-      const cloudinaryResponse = await this.cloudinaryService.upload(prefix + imageBase64, user.id as string);
-      this.userRepository.updateById(user.id, { profileImageUrl: cloudinaryResponse.url });
+      const jwt = await this.tokenService.generateToken(userProfile);
+      return { user: user, jwt: jwt, existing: existing };
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500];
     }
-
-    const userProfile = {} as AppUserProfile;
-    Object.assign(userProfile, { id: (user.id as string).toString(), type: 'facebook' });
-
-    const jwt = await this.tokenService.generateToken(userProfile);
-    return { user: user, jwt: jwt, existing: existing };
   }
 
   @post('/facebook/link', {

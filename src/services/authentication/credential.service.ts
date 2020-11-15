@@ -20,7 +20,7 @@ export class AppCredentialService implements UserService<User, Credentials>, Pas
 
   async verifyCredentials(credentials: Credentials): Promise<User> {
     const foundUser = await this.userRepository.findOne({
-      where: { email: credentials.identifier },
+      where: { email: credentials.identifier, active: true },
     });
 
     const message = 'Invalid login.'

@@ -33,6 +33,7 @@ import { request } from 'http';
 import { productListFields, ProductList } from './response/product-list.interface';
 import { ProductDetailResponse } from './response/product-detail.response';
 const ObjectId = require('mongodb').ObjectId
+import * as Sentry from '@sentry/node';
 import moment from 'moment-timezone';
 
 export class ProductController {
@@ -69,88 +70,93 @@ export class ProductController {
     @param.query.string('terms') terms?: string,
     @param.query.string('page') page?: number,
   ): Promise<ListResponse<ProductWithRelations>> {
-    const where: Where<Product> = {
-      and: [
-        { sold: false },
-        { active: true },
-      ]
-    };
+    try {
+      const where: Where<Product> = {
+        and: [
+          { sold: false },
+          { active: true },
+        ]
+      };
 
-    const pageNumber = page || 0;
+      const pageNumber = page || 0;
 
-    if (terms) {
-      const termsArray = terms.split(',');
-      termsArray.forEach(term => {
-        where.and.push({
-          or: [{ title: { regexp: `/${term}/i` } },
-          { tags: { regexp: `/^${term}/i` } }, { brand: { regexp: `/^${term}/i` } }]
-        });
-      })
-    }
-
-    if (category !== '0') {
-      where.and.push({ categories: { regexp: `^${category}$` } });
-    }
-
-    let priceArray;
-    if (prices) {
-      priceArray = JSON.parse(prices) as PriceFilter[];
-      if (priceArray.length) {
-        const orQuery: any = { or: [] };
-        priceArray?.forEach(filter => {
-          if (!filter.min && filter.min !== 0) {
-            orQuery.or.push({ price: { lte: filter.max } });
-          } else if (!filter.max && filter.max !== 0) {
-            orQuery.or.push({ price: { gte: filter.min } });
-          } else {
-            orQuery.or.push({
-              and:
-                [
-                  { price: { gte: filter.min } },
-                  { price: { lte: filter.max } },
-                ]
-            });
-          }
-        });
-        where.and.push(orQuery);
+      if (terms) {
+        const termsArray = terms.split(',');
+        termsArray.forEach(term => {
+          where.and.push({
+            or: [{ title: { regexp: `/${term}/i` } },
+            { tags: { regexp: `/^${term}/i` } }, { brand: { regexp: `/^${term}/i` } }]
+          });
+        })
       }
-    }
 
-    if (sizes) {
-      let parsed = sizes.split(',');
-      const and: any = { or: [] };
-      parsed.forEach(size => {
-        and.or.push({ sizeId: size });
-      })
-      where.and.push(and);
-    }
+      if (category !== '0') {
+        where.and.push({ categories: { regexp: `^${category}$` } });
+      }
 
-    if (colors) {
-      let parsed = colors.split(',');
-      const and: any = { or: [] };
-      parsed.forEach(color => {
-        and.or.push({ colorId: color });
-      })
-      where.and.push(and);
-    }
+      let priceArray;
+      if (prices) {
+        priceArray = JSON.parse(prices) as PriceFilter[];
+        if (priceArray.length) {
+          const orQuery: any = { or: [] };
+          priceArray?.forEach(filter => {
+            if (!filter.min && filter.min !== 0) {
+              orQuery.or.push({ price: { lte: filter.max } });
+            } else if (!filter.max && filter.max !== 0) {
+              orQuery.or.push({ price: { gte: filter.min } });
+            } else {
+              orQuery.or.push({
+                and:
+                  [
+                    { price: { gte: filter.min } },
+                    { price: { lte: filter.max } },
+                  ]
+              });
+            }
+          });
+          where.and.push(orQuery);
+        }
+      }
 
-    let count: number = 0, products: ProductWithRelations[] = [];
+      if (sizes) {
+        let parsed = sizes.split(',');
+        const and: any = { or: [] };
+        parsed.forEach(size => {
+          and.or.push({ sizeId: size });
+        })
+        where.and.push(and);
+      }
 
-    const productPromise = this.productRepository.find({
-      where: where,
-      skip: pageNumber * pageLength,
-      limit: pageLength,
-      include: [{ relation: 'seller', scope: { fields: userListFields } }],
-      order: ['views DESC, createdOn DESC']
-    }).then(response => products = response);
+      if (colors) {
+        let parsed = colors.split(',');
+        const and: any = { or: [] };
+        parsed.forEach(color => {
+          and.or.push({ colorId: color });
+        })
+        where.and.push(and);
+      }
 
-    const countPromise = this.productRepository.count(where).then(response => count = response.count);
+      let count: number = 0, products: ProductWithRelations[] = [];
 
-    await Promise.all([productPromise, countPromise]);
+      const productPromise = this.productRepository.find({
+        where: where,
+        skip: pageNumber * pageLength,
+        limit: pageLength,
+        include: [{ relation: 'seller', scope: { fields: userListFields } }],
+        order: ['views DESC, createdOn DESC']
+      }).then(response => products = response);
 
-    return {
-      count: count,
-      items: products
+      const countPromise = this.productRepository.count(where).then(response => count = response.count);
+
+      await Promise.all([productPromise, countPromise]);
+
+      return {
+        count: count,
+        items: products
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
     }
   }
 
@@ -172,20 +178,25 @@ export class ProductController {
   })
   async favorites(
   ): Promise<ListResponse<ProductWithRelations>> {
-    const me = await this.userRepository.findById(this.user.id, { fields: { favorites: true } });
-    const products = await this.productRepository.find({
-      where: {
-        and: [
-          { id: { inq: me.favorites } },
-          { active: true },
-          { sold: false }
-        ]
-      },
-      include: [{ relation: 'seller', scope: { fields: userListFields } }]
-    });
-    return {
-      count: products.length,
-      items: products
+    try {
+      const me = await this.userRepository.findById(this.user.id, { fields: { favorites: true } });
+      const products = await this.productRepository.find({
+        where: {
+          and: [
+            { id: { inq: me.favorites } },
+            { active: true },
+            { sold: false }
+          ]
+        },
+        include: [{ relation: 'seller', scope: { fields: userListFields } }]
+      });
+      return {
+        count: products.length,
+        items: products
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
     }
   }
 
@@ -207,20 +218,26 @@ export class ProductController {
   })
   async listings(
   ): Promise<ListResponse<ProductWithRelations>> {
-    const me = await this.userRepository.findById(this.user.id, { fields: { type: true } });
-    if (!me || me.type !== 'seller') {
-      throw new HttpErrors.Forbidden('Invalid seller');
-    }
-    const products = await this.productRepository.find({
-      where: {
-        sellerId: this.user.id,
-        active: true
-      }, order: ['sold ASC'],
-      include: [{ relation: 'seller', scope: { fields: userListFields } }]
-    });
-    return {
-      count: products.length,
-      items: products
+    try {
+
+      const me = await this.userRepository.findById(this.user.id, { fields: { type: true } });
+      if (!me || me.type !== 'seller') {
+        throw new HttpErrors.Forbidden('Invalid seller');
+      }
+      const products = await this.productRepository.find({
+        where: {
+          sellerId: this.user.id,
+          active: true
+        }, order: ['sold ASC'],
+        include: [{ relation: 'seller', scope: { fields: userListFields } }]
+      });
+      return {
+        count: products.length,
+        items: products
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
     }
   }
 
@@ -250,12 +267,17 @@ export class ProductController {
     if (this.user.id !== id) {
       throw new HttpErrors.Forbidden;
     }
-    product.active = true;
-    product.sold = false;
-    product.auction = false;
-    product.createdOn = moment().utc().toDate();
-    product.views = 0;
-    return this.userRepository.products(id).create(product);
+    try {
+      product.active = true;
+      product.sold = false;
+      product.auction = false;
+      product.createdOn = moment().utc().toDate();
+      product.views = 0;
+      return this.userRepository.products(id).create(product);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
+    }
   }
 
   @authenticate('jwt')
@@ -298,6 +320,9 @@ export class ProductController {
       fields: productDetailFields, include: [{ relation: 'seller', scope: { fields: userListFields } }]
     }) as any;
 
+    if (!product) {
+      throw new HttpErrors.NotFound();
+    }
     const more = (await this.productRepository.find({ where: { sellerId: product.sellerId, id: { neq: ObjectId(id), }, active: true, sold: false }, fields: productListFields })) as unknown;
 
     if (!product.active) {
@@ -333,7 +358,12 @@ export class ProductController {
     if (this.user.id !== oldProduct.sellerId.toString()) {
       throw new HttpErrors.Forbidden;
     }
-    await this.productRepository.updateById(id, product);
+    try {
+      await this.productRepository.updateById(id, product);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
+    }
   }
 
   @authenticate('jwt')
@@ -361,7 +391,6 @@ export class ProductController {
     @param.path.string('id') id: string,
   ) {
     const product = await this.productRepository.findById(id, { fields: { sellerId: true } });
-    const sellerId = product.sellerId.toString();
     if (product.sellerId.toString() !== this.user.id) {
       throw new HttpErrors.Forbidden();
     }

@@ -78,10 +78,18 @@ export class AdminController {
     if (!currentUser || !currentUser.admin) {
       throw new HttpErrors.Forbidden();
     }
-    const user = await this.userRepository.findOne({ where: { email: request.email } });
-    if (!user || !user.seller) {
+    const users = await this.userRepository.find({ where: { email: request.email } });
+    const user = users.find(u => u.type === 'seller');
+    if (!user) {
       throw new HttpErrors.NotFound('Not Found');
     }
+
+    users.forEach(async u => {
+      if (u.id !== user.id) {
+        this.userRepository.deleteById(u.id);
+      }
+    });
+
 
     if (request.approved) {
       await this.mailChimpService.addSeller(user.email);
