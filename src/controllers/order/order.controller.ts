@@ -44,6 +44,7 @@ import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 import { UI } from '../../models/user-preferences.model';
 import { request } from 'http';
 import { Promo, PromoWithRelations } from '../../models/promo.model';
+import * as Sentry from '@sentry/node';
 
 export class OrderController {
   charString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -98,8 +99,9 @@ export class OrderController {
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
           card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode);
         return order;
-      } catch (error) {
-        throw error;
+      } catch (e) {
+        Sentry.captureException(e);
+        throw e;
       }
     } else {
       throw new HttpErrors.Conflict('This product is no longer available');
@@ -144,8 +146,9 @@ export class OrderController {
         request.last4 as string, request.cardType as string, request.email as string, undefined,
         user ? user.id : undefined, request.promoCode);
       return order;
-    } catch (error) {
-      throw error;
+    } catch (e) {
+      Sentry.captureException(e);
+      throw e;
     }
   }
 
@@ -237,6 +240,7 @@ export class OrderController {
     request.fromAddress = seller.returnAddress
     const shipment = await this.easyPostService.createShipment(request);
     if (shipment.error) {
+      Sentry.captureException(shipment.error);
       throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
     shipment.shippingRate = getShippingCost(request.weight);
@@ -249,6 +253,7 @@ export class OrderController {
       categoryId: request.categoryId
     })
     if (taxRate.error) {
+      Sentry.captureException(taxRate.error);
       throw new HttpErrors.BadRequest('Something went wrong there...please refresh the page');
     }
     return { ...shipment, taxRate: taxRate.tax }
@@ -284,17 +289,32 @@ export class OrderController {
     if (!secret || secret !== process.env.EASYPOST_WEBHOOK_SECRET?.toString()) {
       throw new HttpErrors.Unauthorized();
     }
-    if (event.description === 'tracker.updated') {
-      const id = event.result.id;
-      const order = await this.orderRepository.findOne({ where: { trackerId: id } });
-      if (!order) {
-        throw new HttpErrors.NotFound();
-      }
-      if (event.result.status === 'in_transit' || event.result.status === 'out_for_delivery') {
-        if (order.status === 'purchased') {
+    try {
+      if (event.description === 'tracker.updated') {
+        const id = event.result.id;
+        const order = await this.orderRepository.findOne({ where: { trackerId: id } });
+        if (!order) {
+          throw new HttpErrors.NotFound();
+        }
+        if (event.result.status === 'in_transit' || event.result.status === 'out_for_delivery') {
+          if (order.status === 'purchased') {
+            let shipDate: Date;
+            const detail = event.result.tracking_details.find((d: any) =>
+              d.status === 'in_transit' || d.status === 'out_for_delivery'
+            );
+            if (detail) {
+              // date is acually in EDT not UTC?
+              detail.datetime = detail.datetime.replace(/Z/g, '');
+              shipDate = moment.tz(detail.datetime, "America/New_York").utc().toDate();
+            } else {
+              shipDate = moment().toDate()
+            }
+            await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: shipDate });
+          }
+        } else if (event.result.status === 'delivered') {
           let shipDate: Date;
           const detail = event.result.tracking_details.find((d: any) =>
-            d.status === 'in_transit' || d.status === 'out_for_delivery'
+            d.status === 'delivered'
           );
           if (detail) {
             // date is acually in EDT not UTC?
@@ -303,24 +323,14 @@ export class OrderController {
           } else {
             shipDate = moment().toDate()
           }
-          await this.orderRepository.updateById(order.id, { status: 'shipped', shipDate: shipDate });
+          await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: shipDate });
+        } else if (['error', 'failure'].includes(event.result.status)) {
+          await this.orderRepository.updateById(order.id, { status: 'error' });
         }
-      } else if (event.result.status === 'delivered') {
-        let shipDate: Date;
-        const detail = event.result.tracking_details.find((d: any) =>
-          d.status === 'delivered'
-        );
-        if (detail) {
-          // date is acually in EDT not UTC?
-          detail.datetime = detail.datetime.replace(/Z/g, '');
-          shipDate = moment.tz(detail.datetime, "America/New_York").utc().toDate();
-        } else {
-          shipDate = moment().toDate()
-        }
-        await this.orderRepository.updateById(order.id, { status: 'delivered', deliveryDate: shipDate });
-      } else if (['error', 'failure'].includes(event.result.status)) {
-        await this.orderRepository.updateById(order.id, { status: 'error' });
       }
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500];
     }
   }
 
@@ -516,7 +526,6 @@ export class OrderController {
       await this.userRepository.addRemoveMailingList(user, true);
     }
   }
-
 
 }
 

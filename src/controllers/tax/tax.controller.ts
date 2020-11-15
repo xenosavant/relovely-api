@@ -6,8 +6,8 @@ import { TaxService } from '../../services/tax/tax.service';
 import { TaxCalculationResponse } from '../../services/tax/tax-calculation.response';
 import { TaxCalculationRequest } from '../../services/tax/tax-calculation.request';
 import { authenticate } from '@loopback/authentication';
-import { post, getModelSchemaRef, requestBody } from '@loopback/rest';
-
+import { post, getModelSchemaRef, requestBody, HttpErrors } from '@loopback/rest';
+import * as Sentry from '@sentry/node';
 
 export class TaxController {
   constructor(
@@ -34,7 +34,13 @@ export class TaxController {
       },
     }) request: TaxCalculationRequest
   ): Promise<TaxCalculationResponse> {
-    return this.taxService.calculateTax(request);
+    try {
+      return this.taxService.calculateTax(request);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
+    }
+
   }
 
 }

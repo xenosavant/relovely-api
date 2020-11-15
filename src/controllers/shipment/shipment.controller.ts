@@ -6,7 +6,7 @@ import { post, getModelSchemaRef, param, requestBody, HttpErrors } from '@loopba
 import { AddressVerification } from '../../services/easypost/address-verification';
 import { EasyPostService } from '../../services/easypost/easypost.service';
 import { Address } from '../../models/address.model';
-
+import * as Sentry from '@sentry/node';
 
 export class ShipmentController {
   constructor(
@@ -27,6 +27,11 @@ export class ShipmentController {
   async verify(
     @requestBody() address: Omit<Address, 'name' | 'id'>
   ): Promise<AddressVerification> {
-    return await this.easypostService.verifyAddress(address);
+    try {
+      return await this.easypostService.verifyAddress(address);
+    } catch (e) {
+      Sentry.captureException(e);
+      throw new HttpErrors[500](`Something went wrong there...we're working on it`);
+    }
   }
 }

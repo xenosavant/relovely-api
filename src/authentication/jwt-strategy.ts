@@ -10,6 +10,7 @@ import { InstagramService } from '../services';
 import { User } from '../models';
 import { AppCredentialService } from '../services/authentication/credential.service';
 import { AppUserProfile } from '../authentication/app-user-profile';
+import * as Sentry from '@sentry/node';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name: string = 'jwt';
@@ -38,6 +39,11 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     if (!user) {
       throw new HttpErrors.Unauthorized();
     }
+    Sentry.configureScope(function (scope) {
+      scope.setUser({
+        id: user.id
+      });
+    });
     return userProfile;
   }
 
