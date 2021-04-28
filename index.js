@@ -9,27 +9,28 @@ if (require.main === module) {
       port: +(process.env.PORT || 3001),
       host: process.env.HOST,
       cors: {
-        origin: '${process.env.WEB_URL}',
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        preflightContinue: false,
-        optionsSuccessStatus: 204,
-        maxAge: 86400,
-        credentials: true
+        origin: process.env.WEB_URL
       },
-      // The `gracePeriodForClose` provides a graceful close for http/https
-      // servers with keep-alive clients. The default value is `Infinity`
-      // (don't force-close). If you want to immediately destroy all sockets
-      // upon stop, set its value to `0`.
-      // See https://www.npmjs.com/package/stoppable
-      gracePeriodForClose: 5000, // 5 seconds
-      openApiSpec: {
-        // useful when used with OpenAPI-to-GraphQL to locate your application
-        setServersFromRequest: true,
-      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
+      maxAge: 86400,
+      credentials: true
     },
-  };
-  application.main(config).catch(err => {
-    console.error('Cannot start the application.', err);
-    process.exit(1);
-  });
+    // The `gracePeriodForClose` provides a graceful close for http/https
+    // servers with keep-alive clients. The default value is `Infinity`
+    // (don't force-close). If you want to immediately destroy all sockets
+    // upon stop, set its value to `0`.
+    // See https://www.npmjs.com/package/stoppable
+    gracePeriodForClose: 5000, // 5 seconds
+    openApiSpec: {
+      // useful when used with OpenAPI-to-GraphQL to locate your application
+      setServersFromRequest: true,
+    },
+  },
+};
+application.main(config).catch(err => {
+  console.error('Cannot start the application.', err);
+  process.exit(1);
+});
 }
