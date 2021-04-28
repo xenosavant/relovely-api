@@ -9,7 +9,7 @@ if (require.main === module) {
       port: +(process.env.PORT || 3001),
       host: process.env.HOST,
       cors: {
-        origin: '*',
+        origin: 'https://dev.relovely.com',
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         preflightContinue: false,
         optionsSuccessStatus: 204,
