@@ -16,6 +16,7 @@ import { User } from '../../models';
 import { userListFields } from '../user/response/user-list.interface';
 import { MailChimpService } from '../../services/mailchimp/mailchimp.service';
 import { Promo } from '../../models/promo.model';
+import * as Sentry from '@sentry/node';
 
 export class AdminController {
   constructor(
@@ -74,54 +75,60 @@ export class AdminController {
     request: ApproveSellerRequest,
   ): Promise<void> {
 
-    const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
-    if (!currentUser || !currentUser.admin) {
-      throw new HttpErrors.Forbidden();
-    }
-    const users = await this.userRepository.find({ where: { email: request.email } });
-    const user = users.find(u => u.type === 'seller');
-    if (!user) {
-      throw new HttpErrors.NotFound('Not Found');
-    }
-
-    users.forEach(async u => {
-      if (u.id !== user.id) {
-        this.userRepository.deleteById(u.id);
+    try {
+      const currentUser = await this.userRepository.findById(this.user.id, { fields: { admin: true } });
+      if (!currentUser || !currentUser.admin) {
+        throw new HttpErrors.Forbidden();
       }
-    });
-
-
-    if (request.approved) {
-      await this.mailChimpService.addSeller(user.email);
-      await this.userRepository.addRemoveMailingList(user, true);
-      if (/@/.test(user.instagramUsername as string)) {
-        user.instagramUsername = user.instagramUsername?.replace(/@/, '');
+      const users = await this.userRepository.find({ where: { email: request.email } });
+      const user = users.find(u => u.type === 'seller');
+      if (!user) {
+        throw new HttpErrors.NotFound('Not Found');
       }
 
-      const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
-
-      existingUsers.forEach(u => {
-        this.userRepository.updateById(u.id, {
-          username: undefined,
-          usernameReset: true
-        });
+      users.forEach(async u => {
+        if (u.id !== user.id) {
+          this.userRepository.deleteById(u.id);
+        }
       });
 
-      await this.userRepository.updateById(user.id,
-        {
-          username: user.instagramUsername,
-          instagramUsername: user.instagramUsername,
-          'seller.approved': true,
-          'seller.featured': request.featured
-        } as any);
-      await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
-        `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${user.emailVerificationCode}">here</a> to get started.`);
-    } else {
-      await this.userRepository.updateById(user.id,
-        {
-          'seller.approved': false,
-          'seller.featured': false
-        } as any);
+
+      if (request.approved) {
+        await this.mailChimpService.addSeller(user.email);
+        await this.userRepository.addRemoveMailingList(user, true);
+        if (/@/.test(user.instagramUsername as string)) {
+          user.instagramUsername = user.instagramUsername?.replace(/@/, '');
+        }
+
+        const existingUsers = await this.userRepository.find({ where: { username: user.instagramUsername, email: { neq: user.email } } });
+
+        existingUsers.forEach(u => {
+          this.userRepository.updateById(u.id, {
+            username: undefined,
+            usernameReset: true
+          });
+        });
+
+        await this.userRepository.updateById(user.id,
+          {
+            username: user.instagramUsername,
+            instagramUsername: user.instagramUsername,
+            'seller.approved': true,
+            'seller.featured': request.featured
+          } as any);
+        await this.sendGridService.sendEmail(request.email as string, `You're Approved To Sell On Relovely!`,
+          `Click <a href="${process.env.WEB_URL}/account/verify?type=seller&code=${user.emailVerificationCode}">here</a> to get started.`);
+      } else {
+        await this.userRepository.updateById(user.id,
+          {
+            'seller.approved': false,
+            'seller.featured': false
+          } as any);
+      }
+    }
+    catch (e) {
+      Sentry.captureException(e);
+      throw e;
     }
   }
 
