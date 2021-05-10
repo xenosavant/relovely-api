@@ -150,7 +150,7 @@ export class UserController {
     }
 
     if (!user) {
-      user = await this.userRepository.findOne({ where: { username: id }, fields: userDetailFields, include: include });
+      user = await this.userRepository.findOne({ where: { username: { regexp: `/${id}/i` } }, fields: userDetailFields, include: include });
     }
 
     if (!user) {
