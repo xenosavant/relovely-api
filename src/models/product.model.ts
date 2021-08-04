@@ -81,6 +81,11 @@ export class Product extends Entity {
   })
   size?: string;
 
+  @property.array(String, {
+    required: false,
+  })
+  sizes?: string[];
+
   @property({
     type: 'string',
     required: false,
@@ -104,6 +109,12 @@ export class Product extends Entity {
     required: false,
   })
   retailPrice?: number;
+
+  @property({
+    type: 'number',
+    required: false,
+  })
+  quantity?: number;
 
   @property({
     type: 'boolean',
@@ -135,6 +146,11 @@ export class Product extends Entity {
   })
   views?: number;
 
+  @property({
+    type: 'string'
+  })
+  type: string;
+
   @property.array(String)
   tags?: string[];
 
@@ -155,3 +171,4 @@ export interface ProductRelations {
 }
 
 export type ProductWithRelations = Product & ProductRelations;
+

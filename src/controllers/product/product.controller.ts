@@ -123,6 +123,7 @@ export class ProductController {
         const and: any = { or: [] };
         parsed.forEach(size => {
           and.or.push({ sizeId: size });
+          and.or.push({ sizes: size });
         })
         where.and.push(and);
       }
@@ -258,7 +259,7 @@ export class ProductController {
         'application/json': {
           schema: getModelSchemaRef(Product, {
             title: 'NewProductInUser',
-            optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction']
+            optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction', 'sizes', 'quantity']
           }),
         },
       },
