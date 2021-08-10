@@ -184,6 +184,11 @@ export class Order extends Entity {
   })
   public promoCode?: string;
 
+  @property.array(String, {
+    required: false,
+  })
+  sizes?: string[];
+
   @property({
     type: 'string',
     required: false

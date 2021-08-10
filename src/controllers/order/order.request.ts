@@ -10,4 +10,8 @@ export interface OrderRequest {
   createAccount?: boolean;
   joinMailingList?: boolean;
   promoCode?: string;
+  sizes?: string[];
+  pinterest?: string;
+  instagram?: string;
+  buyerInfo?: string;
 }
