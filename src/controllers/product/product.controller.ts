@@ -295,7 +295,7 @@ export class ProductController {
 
     const product = await this.productRepository.findById(id, { fields: { views: true, sellerId: true } });
 
-    if (!product) {
+    if (product.sellerId.toString() === this.user.id || !product) {
       throw new HttpErrors.BadRequest();
     }
 
