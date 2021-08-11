@@ -259,7 +259,7 @@ export class ProductController {
         'application/json': {
           schema: getModelSchemaRef(Product, {
             title: 'NewProductInUser',
-            optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction', 'sizes', 'quantity']
+            optional: ['sellerId', 'size', 'sizeId', 'sold', 'auction', 'sizes', 'quantity', 'title']
           }),
         },
       },

@@ -30,9 +30,9 @@ export class Product extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  title: string;
+  title?: string;
 
   @property.array(ImageSet)
   images?: ImageSet[];
