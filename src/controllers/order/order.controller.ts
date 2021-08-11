@@ -487,7 +487,7 @@ export class OrderController {
           {
             quantity: 1,
             product_identifier: product.id as string,
-            description: product.title,
+            description: product.title || 'Bundle',
             unit_price: (product.price / 100),
             sales_tax: (order.tax as number / 100)
           }
