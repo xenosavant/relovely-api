@@ -18,6 +18,8 @@ export class UserPreferences {
   colors: string[];
   @property.array(PriceRange)
   prices: PriceRange[];
+  @property.array(String)
+  types: string[];
 }
 
 @model()

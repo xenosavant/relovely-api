@@ -67,6 +67,7 @@ export class ProductController {
     @param.query.string('sizes') sizes?: string,
     @param.query.string('colors') colors?: string,
     @param.query.string('prices') prices?: string,
+    @param.query.string('types') types?: string,
     @param.query.string('terms') terms?: string,
     @param.query.string('page') page?: number,
   ): Promise<ListResponse<ProductWithRelations>> {
@@ -92,6 +93,13 @@ export class ProductController {
 
       if (category !== '0') {
         where.and.push({ categories: { regexp: `^${category}$` } });
+      }
+
+      if (types) {
+        const typeArray = types.split(',');
+        if (typeArray.length === 1) {
+          where.and.push({ type: typeArray[0] });
+        }
       }
 
       let priceArray;
