@@ -98,7 +98,7 @@ export class OrderController {
         }
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
           card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode,
-          request.sizes, request.instagram, request.pinterest, request.buyerInfo);
+          request.instagram, request.pinterest, request.buyerInfo);
         return order;
       } catch (e) {
         Sentry.captureException(e);
@@ -145,7 +145,7 @@ export class OrderController {
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
         request.last4 as string, request.cardType as string, request.email as string, undefined,
-        user ? user.id : undefined, request.promoCode, request.sizes, request.instagram, request.pinterest, request.buyerInfo);
+        user ? user.id : undefined, request.promoCode, request.instagram, request.pinterest, request.buyerInfo);
       return order;
     } catch (e) {
       Sentry.captureException(e);
@@ -357,7 +357,7 @@ export class OrderController {
   async createOrder(shipTo: Address, product: Product, paymentId: string,
     shipmentId: string, cardLast4: string, cardType: string,
     buyerEmail: string, customerId?: string, userId?: string, promoCode?: string,
-    sizes?: string[], instagram?: string, pinterest?: string, buyerInfo?: string): Promise<Order> {
+    instagram?: string, pinterest?: string, buyerInfo?: string): Promise<Order> {
     const seller = await this.userRepository.findById(product.sellerId);
     const shipment = await this.easyPostService.purchaseShipment(shipmentId);
     let sellerFee = 0,
@@ -451,7 +451,6 @@ export class OrderController {
         discount: discount,
         shippingDiscount: shippingDiscount,
         promoCode: promoCode,
-        sizes: sizes,
         instagram: instagram,
         pinterest: pinterest,
         buyerInfo: buyerInfo
@@ -506,7 +505,7 @@ export class OrderController {
         to: shipTo,
         orderNumber: order.orderNumber,
         trackingLink: order.trackingUrl,
-        title: product.title
+        title: product.title || 'a Mystery Bundle'
       },
         'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
       this.sendGridService.sendTransactional({
@@ -517,7 +516,7 @@ export class OrderController {
         to: shipTo,
         orderNumber: order.orderNumber,
         shippingLabelUrl: order.shippingLabelUrl,
-        title: product.title
+        title: product.title || 'Mystery Bundle'
       },
         'd-927c52400712440ea78d8d487e0c25ed', seller.email);
 
