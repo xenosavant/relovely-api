@@ -505,7 +505,7 @@ export class OrderController {
         to: shipTo,
         orderNumber: order.orderNumber,
         trackingLink: order.trackingUrl,
-        title: product.title || 'a Mystery Bundle'
+        title: product.title || 'Mystery Bundle'
       },
         'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
       this.sendGridService.sendTransactional({
