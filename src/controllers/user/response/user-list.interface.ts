@@ -28,3 +28,12 @@ export const userListFields = {
   id: true,
   type: true
 };
+
+export const productListFields = {
+  id: true,
+  images: true,
+  title: true,
+  type: true,
+  categories: true
+}
+

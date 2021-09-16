@@ -26,7 +26,7 @@ import { SecurityBindings } from '@loopback/security';
 import { AppUserProfile } from '../../authentication/app-user-profile';
 import { authenticate } from '@loopback/authentication';
 import moment from 'moment-timezone';
-import { userListFields } from '../user/response/user-list.interface';
+import { productListFields, userListFields } from '../user/response/user-list.interface';
 import { ListResponse } from '../list-response';
 import { StripeService } from '../../services/stripe/stripe.service';
 import { OrderRequest } from './order.request';
@@ -97,7 +97,8 @@ export class OrderController {
           await this.addToMailingList(buyer.email as string, buyer);
         }
         const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
-          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode);
+          card.last4 as string, card.type, buyer.email, buyer.stripeCustomerId, this.user.id, request.promoCode,
+          request.instagram, request.pinterest, request.buyerInfo);
         return order;
       } catch (e) {
         Sentry.captureException(e);
@@ -144,7 +145,7 @@ export class OrderController {
     try {
       const order = await this.createOrder(request.address, product, request.paymentId, request.shipmentId,
         request.last4 as string, request.cardType as string, request.email as string, undefined,
-        user ? user.id : undefined, request.promoCode);
+        user ? user.id : undefined, request.promoCode, request.instagram, request.pinterest, request.buyerInfo);
       return order;
     } catch (e) {
       Sentry.captureException(e);
@@ -172,7 +173,7 @@ export class OrderController {
     @param.query.boolean('sales') sales?: boolean
   ): Promise<ListResponse<Order>> {
     const currentUser = await this.userRepository.findById(this.user.id);
-    const include = [{ relation: 'product', scope: { fields: { images: true, title: true, id: true } } },
+    const include = [{ relation: 'product', scope: { fields: productListFields } },
     { relation: 'buyer', scope: { fields: userListFields } },
     { relation: 'seller', scope: { fields: userListFields } }];
     let where = {};
@@ -355,7 +356,8 @@ export class OrderController {
 
   async createOrder(shipTo: Address, product: Product, paymentId: string,
     shipmentId: string, cardLast4: string, cardType: string,
-    buyerEmail: string, customerId?: string, userId?: string, promoCode?: string): Promise<Order> {
+    buyerEmail: string, customerId?: string, userId?: string, promoCode?: string,
+    instagram?: string, pinterest?: string, buyerInfo?: string): Promise<Order> {
     const seller = await this.userRepository.findById(product.sellerId);
     const shipment = await this.easyPostService.purchaseShipment(shipmentId);
     let sellerFee = 0,
@@ -384,6 +386,7 @@ export class OrderController {
     });
 
     if (tax.error) {
+      Sentry.captureException(tax.error);
       throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
     }
 
@@ -447,7 +450,10 @@ export class OrderController {
         transferFee: transferFee,
         discount: discount,
         shippingDiscount: shippingDiscount,
-        promoCode: promoCode
+        promoCode: promoCode,
+        instagram: instagram,
+        pinterest: pinterest,
+        buyerInfo: buyerInfo
       });
 
       if (freeSalesChanged) {
@@ -480,7 +486,7 @@ export class OrderController {
           {
             quantity: 1,
             product_identifier: product.id as string,
-            description: product.title,
+            description: product.title || 'Bundle',
             unit_price: (product.price / 100),
             sales_tax: (order.tax as number / 100)
           }
@@ -499,7 +505,7 @@ export class OrderController {
         to: shipTo,
         orderNumber: order.orderNumber,
         trackingLink: order.trackingUrl,
-        title: product.title
+        title: product.title || 'Mystery Bundle'
       },
         'd-d5bc3507b9c042a4880abae643ee2a26', buyerEmail);
       this.sendGridService.sendTransactional({
@@ -510,7 +516,7 @@ export class OrderController {
         to: shipTo,
         orderNumber: order.orderNumber,
         shippingLabelUrl: order.shippingLabelUrl,
-        title: product.title
+        title: product.title || 'Mystery Bundle'
       },
         'd-927c52400712440ea78d8d487e0c25ed', seller.email);
 

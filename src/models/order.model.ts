@@ -184,6 +184,24 @@ export class Order extends Entity {
   })
   public promoCode?: string;
 
+  @property({
+    type: 'string',
+    required: false
+  })
+  public pinterest?: string;
+
+  @property({
+    type: 'string',
+    required: false
+  })
+  public instagram?: string;
+
+  @property({
+    type: 'string',
+    required: false
+  })
+  public buyerInfo?: string;
+
   @hasOne(() => Review, { keyTo: 'orderId' })
   review: Review;
 }
