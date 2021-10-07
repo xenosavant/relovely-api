@@ -16,7 +16,7 @@ export class SellerDetails {
   @property()
   featured?: boolean;
   @property()
-  featuredOrder?: boolean;
+  featuredOrder?: number;
   @property()
   freeSales?: number;
   @property.array('string')
