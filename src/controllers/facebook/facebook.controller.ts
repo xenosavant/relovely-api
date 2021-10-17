@@ -60,15 +60,15 @@ export class FacebookController {
     request: OAuthRequest,
   ): Promise<AuthResponse> {
 
-    const authResponse = await this.facebookService.getAccessToken(request.code, 'signup');
-    const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
-    const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
-    const picture = await this.facebookService.getProfilePicture(longLivedToken.access_token);
-    const existingFacebookUser = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
-
-    let existing = false;
-    let user: UserWithRelations;
     try {
+      const authResponse = await this.facebookService.getAccessToken(request.code, 'signup');
+      const longLivedToken = await this.facebookService.getlongLivedAccessToken(authResponse.access_token)
+      const fbuser = await this.facebookService.getBasicUserData(longLivedToken.access_token);
+      const picture = await this.facebookService.getProfilePicture(longLivedToken.access_token);
+      const existingFacebookUser = await this.userRepository.findOne({ where: { facebookUserId: fbuser.id } });
+
+      let existing = false;
+      let user: UserWithRelations;
       if (existingFacebookUser) {
         await this.userRepository.updateById(existingFacebookUser.id, { facebookAuthToken: longLivedToken.access_token });
         user = existingFacebookUser;
@@ -78,13 +78,6 @@ export class FacebookController {
 
         if (existingEmail) {
           throw new HttpErrors.Conflict('The email asociated with that account is not available.');
-        }
-
-        try {
-
-        } catch (e) {
-          Sentry.captureException(e);
-          throw new HttpErrors[500];
         }
 
         const stripeId = await this.stripeService.createCustomer(fbuser.email as string);
