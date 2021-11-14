@@ -366,6 +366,7 @@ export class OrderController {
     if (seller.seller?.freeSales && seller.seller.freeSales > 0) {
       freeSalesChanged = true;
     } else {
+      // if no free sales calculate seller fee
       if (product.price < 500) {
         sellerFee = 50;
       } else {
@@ -374,8 +375,10 @@ export class OrderController {
       transferFee = Math.round((product.price * .029));
     }
 
+    // calculate shipping cost
     const shippingCost = getShippingCost(product.weight);
 
+    // calculate tax
     const tax = await this.taxService.calculateTax({
       toAddress: shipTo,
       fromAddress: seller.returnAddress as Address,
@@ -390,7 +393,7 @@ export class OrderController {
       throw new HttpErrors[500]('Something went wrong there...please try your purchase again');
     }
 
-    // Check for promo
+    // Check for promo and calculate discount or shipping discount
     let discount: number = 0;
     let shippingDiscount: number = 0;
     let promo: PromoWithRelations | null = null;
@@ -408,13 +411,24 @@ export class OrderController {
       }
     }
 
+    // the total amount to charge the customer is the price - discount + tax + shipping cost - shipping discount
     const totalCharge = (product.price - discount) + tax.tax + (shippingCost - shippingDiscount);
+
+    // deductions are the items that go to our account (fees + shipping + tax)
     const deductions = sellerFee + transferFee + tax.tax + shippingCost;
 
+    // actual fees represent the deductions less any discounts (we absorb the cost of discounts)
     const actualFees = deductions - discount - shippingDiscount;
     let charge, payout = undefined;
-    if (actualFees > 0) {
+    // If the sale is internal, we do a direct charge with no payout
+    if (seller.seller?.internal) {
+      const response = await this.stripeService.directCharge(seller.stripeSellerId as string, totalCharge, totalCharge - actualFees, paymentId, customerId as string, false);
+      charge = response?.charge;
+      // if fees after discount is greater than zero, it means we have enough to charge the customer and do a destination payment to the seller
+    } else if (actualFees > 0) {
       charge = await this.stripeService.chargeCustomer(seller.stripeSellerId as string, totalCharge, actualFees, paymentId, customerId as string);
+      // if the discounted fee is less than zero it means that we don't have enough to pay the seller and must
+      // we must do a direct charge to customer,followed by a payout to the seller
     } else {
       const response = await this.stripeService.directCharge(seller.stripeSellerId as string, totalCharge, totalCharge - actualFees, paymentId, customerId as string);
       if (response) {

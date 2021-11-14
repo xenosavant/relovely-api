@@ -162,13 +162,13 @@ export class StripeService {
     }
     const charge = await stripe.charges.create(param);
     if (charge.outcome?.network_status === 'approved_by_network') {
-      return charge.id
+      return charge.id;
     } else {
       return null;
     }
   }
 
-  async directCharge(sellerId: string, totalCharge: number, totalPayout: number, paymentId: string, customerId?: string | undefined): Promise<{ payout: string, charge: string } | null> {
+  async directCharge(sellerId: string, totalCharge: number, totalPayout: number, paymentId: string, customerId?: string | undefined, payout = true): Promise<{ payout?: string, charge: string } | null> {
     const charge: Stripe.ChargeCreateParams = {
       amount: totalCharge,
       source: paymentId,
@@ -182,13 +182,16 @@ export class StripeService {
     const chargeResponse = await stripe.charges.create(charge);
     if (chargeResponse.outcome?.network_status === 'approved_by_network') {
       // payout to seller
-      const payout: Stripe.TransferCreateParams = {
-        amount: totalPayout,
-        currency: 'USD',
-        destination: sellerId as string
+      if (payout) {
+        const payout: Stripe.TransferCreateParams = {
+          amount: totalPayout,
+          currency: 'USD',
+          destination: sellerId as string
+        }
+        const payoutResponse = await stripe.transfers.create(payout);
+        return { charge: chargeResponse.id, payout: payoutResponse.id };
       }
-      const payoutResponse = await stripe.transfers.create(payout);
-      return { charge: chargeResponse.id, payout: payoutResponse.id };
+      return { charge: chargeResponse.id };
     } else {
       return null;
     }
