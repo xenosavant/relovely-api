@@ -10,6 +10,8 @@ export class SellerDetails {
   @property()
   verificationStatus: string;
   @property()
+  internal?: boolean;
+  @property()
   address?: Address;
   @property()
   approved?: boolean;
